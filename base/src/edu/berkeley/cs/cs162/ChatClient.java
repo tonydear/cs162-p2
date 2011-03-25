@@ -1,30 +1,31 @@
 package edu.berkeley.cs.cs162;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 
 public class ChatClient extends Thread{
 	private Socket mySocket;
 	private Map<String,ChatLog> logs;
-	private InputStream commands;
+	private BufferedReader commands;
 	private ObjectInputStream received;
 	private ObjectOutputStream sent;
 	private Thread receiver;
 	private boolean connected;
-	private Message reply; //what should reply from server look like
+	private TransportObject reply; //what should reply from server look like
 	private volatile boolean isWaiting; //waiting for reply from server?
 	
 	public ChatClient(){
 		mySocket = null;
 		logs = new HashMap<String,ChatLog>();
-		commands = System.in;
+		commands = new BufferedReader(new InputStreamReader(System.in));
 		
 		connected = false;
 		isWaiting = false;
@@ -71,12 +72,15 @@ public class ChatClient extends Thread{
 	}
 	
 	private boolean login(String username){
+		if(!connected)
+			return false;
 		
 		return false;
 	}
 	
 	private void logout(){
-		
+		if(!connected)
+			return;
 	}
 	
 	private boolean join(String gname){
@@ -96,15 +100,27 @@ public class ChatClient extends Thread{
 	}
 	
 	private void sleep(int time){
-		
+		this.sleep(time);
 	}
 	
 	public Map<String,ChatLog> getLogs(){
-		return null;
+		return logs;
 	}
 	
 	public synchronized void processCommands(){
-		 
+		String command = null;
+		try {
+			command = commands.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
+		String[] tokens = command.split(" ");
+		if(tokens.length == 0)
+			return;
+		if(tokens[0].equals("connect")){
+			
+		}
 	}
 	
 	private synchronized void signalReceive(){

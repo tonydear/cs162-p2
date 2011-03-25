@@ -1,20 +1,20 @@
 package edu.berkeley.cs.cs162;
 
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.net.Socket;
 import java.util.Map;
 
 
-public class ChatClient {
+public class ChatClient extends Thread{
 	private Socket mySocket;
 	private Map<String,ChatLog> logs;
 	private InputStream commands;
-	private InputStream received;
+	private ObjectInputStream received;
 	private Thread receiver;
 	private boolean connected;
 	private Message reply; //what should reply from server look like
 	private volatile boolean isWaiting; //waiting for reply from server?
-	
 	
 	public ChatClient(){
 		receiver = new Thread(){
@@ -26,6 +26,8 @@ public class ChatClient {
             }
         };
         receiver.start();
+        start();
+        //changed
 	}
 	
 	private boolean connect(String hostname, int port){
@@ -76,11 +78,15 @@ public class ChatClient {
 		
 	}
 	
+	@Override
+	public void run(){
+		while(true){
+			processCommands();
+		}
+	}
+	
 	public static void main(String[] args){
 		ChatClient client = new ChatClient();
-		while(true){
-			client.processCommands();
-		}
 	}
 	
 }

@@ -15,7 +15,7 @@ public class TransportObject implements Serializable {
 	
 	//Default
 	public TransportObject() {
-		command = null;
+		command = Command.NONE;
 		username = null;
 		gname = null;
 		sender = null;
@@ -23,7 +23,7 @@ public class TransportObject implements Serializable {
 		sqn = 0;
 		msg = null;
 		time = 0;
-		reply = null;
+		reply = ServerReply.NONE;
 	}
 	
 	//Default with cmd; client logout, disconnect
@@ -62,9 +62,16 @@ public class TransportObject implements Serializable {
 		this.reply = reply;
 	}
 	
-	//Server send, sendack fail
+	//Server send
 	public TransportObject(Command cmd, int sqn, ServerReply reply) {
 		this(cmd);
+		this.sqn = sqn;
+		this.reply = reply;
+	}
+	
+	//Server sendack failed
+	public TransportObject(ServerReply reply, int sqn) {
+		this();
 		this.sqn = sqn;
 		this.reply = reply;
 	}

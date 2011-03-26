@@ -1,6 +1,7 @@
 package edu.berkeley.cs.cs162;
 
 public enum ServerReply {
+	NONE,
 	OK,
 	REJECTED,
 	QUEUED,
@@ -11,7 +12,7 @@ public enum ServerReply {
 	NOT_MEMBER,
 	BAD_DEST,
 	FAIL,
-	FAILED,
+	sendack,
 	receive,
 	timeout
 }

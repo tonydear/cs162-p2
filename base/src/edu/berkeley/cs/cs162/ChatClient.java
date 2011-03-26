@@ -169,7 +169,12 @@ public class ChatClient extends Thread{
 	@Override
 	public void run(){
 		while(true){
-			processCommands();
+			try {
+				processCommands();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	

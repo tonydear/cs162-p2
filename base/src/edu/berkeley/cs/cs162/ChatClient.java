@@ -8,7 +8,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 
 public class ChatClient extends Thread{
@@ -111,6 +110,17 @@ public class ChatClient extends Thread{
 	}
 	
 	private void receive(){
+		TransportObject recObject = (TransportObject) received.readObject();
+		Command type = recObject.getCommand();
+		if(isWaiting && type.equals(reply)){
+			
+		}else if(type.equals(Command.SEND)){
+			
+		}else if(type.equals(Command.SENDACK)){
+			
+		}else if(type.equals(Command.RECEIVE)){
+			
+		}
 		
 	}
 	

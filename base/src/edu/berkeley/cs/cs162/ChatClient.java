@@ -131,31 +131,79 @@ public class ChatClient extends Thread{
 			return;
 		}
 		String[] tokens = command.split(" ");
+		int args = tokens.length;
 		if(tokens.length == 0)
 			return;
 		if(tokens[0].equals("connect")){
-			
+			if(args != 2)
+				throw new Exception("invalid arguments for connect command");
+			tokens = tokens[1].split(":");
+			args = tokens.length;
+			if(args != 2)
+				throw new Exception("invalid arguments for connect command");
+			String hostname = tokens[0];
+			int port;
+			try {
+				port = Integer.parseInt(tokens[1]);
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+				return;
+			}
+			connect(hostname, port);
 		}
 		else if(tokens[0].equals("disconnect")) {
-			
+			if(args != 1)
+				throw new Exception("invalid arguments for disconnect command");
+			disconnect();
 		}
 		else if(tokens[0].equals("login")) {
-			
+			if(args != 2)
+				throw new Exception("invalid arguments for login command");
+			String username = tokens[1];
+			login(username);
 		}
 		else if(tokens[0].equals("logout")) {
-			
+			if(args != 1)
+				throw new Exception("invalid arguments for logout command");
+			logout();
 		}
 		else if(tokens[0].equals("join")) {
-			
+			if(args != 2)
+				throw new Exception("invalid arguments for join command");
+			String gname = tokens[1];
+			join(gname);
 		}
 		else if(tokens[0].equals("leave")) {
-			
+			if(args != 2)
+				throw new Exception("invalid arguments for leave command");
+			String gname = tokens[1];
+			leave(gname);
 		}
 		else if(tokens[0].equals("send")) {
-			
+			if(args != 4)
+				throw new Exception("invalid arguments for send command");
+			String dest = tokens[1];
+			int sqn;
+			try {
+				sqn = Integer.parseInt(tokens[2]);
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+				return;
+			}
+			String msg = tokens[3];
+			send(dest,sqn,msg);
 		}
 		else if(tokens[0].equals("sleep")) {
-			
+			if(args != 2)
+				throw new Exception("invalid arguments for sleep command");
+			int time;
+			try {
+				time = Integer.parseInt(tokens[1]);
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+				return;
+			}
+			sleep(time);
 		}
 		else {
 			throw new Exception("invalid command");

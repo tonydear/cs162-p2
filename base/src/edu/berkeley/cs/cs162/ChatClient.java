@@ -110,15 +110,42 @@ public class ChatClient extends Thread{
 	}
 	
 	private void receive(){
-		TransportObject recObject = (TransportObject) received.readObject();
+		TransportObject recObject = null;
+		try {
+			recObject = (TransportObject) received.readObject();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(recObject == null)
+			return;
 		Command type = recObject.getCommand();
+		ServerReply servReply = recObject.getServerReply();
 		if(isWaiting && type.equals(reply)){
-			
+			if(reply.equals(Command.LOGIN)){
+				if(servReply.equals(ServerReply.OK)){
+					
+				}else if(servReply.equals(ServerReply.REJECTED)){
+					
+				}else if(servReply.equals(ServerReply.QUEUED)){
+					
+				}
+			}else if(reply.equals(Command.JOIN)){
+				if(servReply.equals(ServerReply.BAD_GROUP)){
+					
+				}else if(servReply.equals(ServerReply.OK_JOIN)){
+					
+				}else if(servReply.equals(ServerReply.OK_CREATE)){
+					
+				}else if(servReply.equals(ServerReply.FAIL_FULL)){
+					
+				}
+			}else if(reply.equals(Command.LEAVE)){
+				
+			}
 		}else if(type.equals(Command.SEND)){
 			
-		}else if(type.equals(Command.SENDACK)){
-			
-		}else if(type.equals(Command.RECEIVE)){
+		}else if(type.equals(Command.NONE)){
 			
 		}
 		

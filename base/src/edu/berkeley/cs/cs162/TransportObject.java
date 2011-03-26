@@ -6,22 +6,30 @@ public class TransportObject implements Serializable {
 	private Command command;
 	private String username;
 	private String gname;
+	private String sender;
 	private String dest;
 	private int sqn;
 	private String msg;
 	private int time;
 	private ServerReply reply;
 	
-	//Default; client logout, disconnect
-	public TransportObject(Command cmd) {
-		command = cmd;
+	//Default
+	public TransportObject() {
+		command = null;
 		username = null;
 		gname = null;
+		sender = null;
 		dest = null;
 		sqn = 0;
 		msg = null;
 		time = 0;
 		reply = null;
+	}
+	
+	//Default with cmd; client logout, disconnect
+	public TransportObject(Command cmd) {
+		this();
+		command = cmd;
 	}
 	
 	//Client login, join, leave
@@ -41,12 +49,6 @@ public class TransportObject implements Serializable {
 		this.msg = msg;
 	}
 	
-	//Client sleep
-	public TransportObject(Command cmd, int time) {
-		this(cmd);
-		this.time = time;
-	}
-	
 	//Server disconnect, login, logout
 	public TransportObject(Command cmd, ServerReply reply) {
 		this(cmd);
@@ -60,10 +62,25 @@ public class TransportObject implements Serializable {
 		this.reply = reply;
 	}
 	
-	//Server send
+	//Server send, sendack fail
 	public TransportObject(Command cmd, int sqn, ServerReply reply) {
 		this(cmd);
 		this.sqn = sqn;
+		this.reply = reply;
+	}
+	
+	//Server receive 
+	public TransportObject(ServerReply reply, String sender, String dest, String msg) {
+		this();
+		this.reply = reply;
+		this.sender = sender;
+		this.dest = dest;
+		this.msg = msg;
+	}
+	
+	//Timeout
+	public TransportObject(ServerReply reply) {
+		this();
 		this.reply = reply;
 	}
 }

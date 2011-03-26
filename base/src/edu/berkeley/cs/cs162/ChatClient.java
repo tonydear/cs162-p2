@@ -8,7 +8,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
+import java.util.Set;
 
 
 public class ChatClient extends Thread{
@@ -19,7 +19,7 @@ public class ChatClient extends Thread{
 	private ObjectOutputStream sent;
 	private Thread receiver;
 	private boolean connected;
-	private TransportObject reply; //what should reply from server look like
+	private Command reply; //what should reply from server look like
 	private volatile boolean isWaiting; //waiting for reply from server?
 	
 	public ChatClient(){
@@ -71,11 +71,19 @@ public class ChatClient extends Thread{
 		System.out.append(o);
 	}
 	
-	private boolean login(String username){
+	private void login(String username){
 		if(!connected)
-			return false;
-		
-		return false;
+			return;
+		TransportObject toSend = new TransportObject(Command.LOGIN,username);
+		try {
+			sent.writeObject(toSend);
+			isWaiting = true;
+			reply = Command.LOGIN;
+			this.wait();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private void logout(){
@@ -84,6 +92,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private boolean join(String gname){
+		TransportObject toSend = new TransportObject(Command.JOIN,gname);
 		return false;
 	}
 	
@@ -92,7 +101,13 @@ public class ChatClient extends Thread{
 	}
 	
 	private void send(String dest, int sqn, String msg){
-		
+		TransportObject toSend = new TransportObject(Command.SEND,dest,sqn,msg);
+		try {
+			sent.writeObject(toSend);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private void receive(){
@@ -202,7 +217,12 @@ public class ChatClient extends Thread{
 	@Override
 	public void run(){
 		while(true){
-			processCommands();
+			try {
+				processCommands();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	

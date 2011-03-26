@@ -83,4 +83,15 @@ public class TransportObject implements Serializable {
 		this();
 		this.reply = reply;
 	}
+	
+	//Getters
+	public Command getCommand() { return command; }	
+	public String getUsername() { return username; }
+	public String getGname() { return gname; }	
+	public String getSender() { return sender; }
+	public String getDest() { return dest; }
+	public int getSQN() { return sqn; }
+	public String getMessage() { return msg; }
+	public int getSleepTime() {	return time; }
+	public ServerReply getServerReply() { return reply; }
 }

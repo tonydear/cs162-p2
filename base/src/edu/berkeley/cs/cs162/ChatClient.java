@@ -56,6 +56,8 @@ public class ChatClient extends Thread{
 	}
 	
 	private void disconnect(){
+		if (!connected)
+			return;
 		try {
 			mySocket.close();
 		} catch (IOException e) {
@@ -68,41 +70,45 @@ public class ChatClient extends Thread{
 		System.out.append(o);
 	}
 	
-	//TODO
 	private void login(String username){
 		if (!connected)
 			return;
-		TransportObject toSend = new TransportObject(Command.LOGIN,username);
+		TransportObject toSend = new TransportObject(Command.login, username);
 		try {
 			sent.writeObject(toSend);
 			isWaiting = true;
-			reply = Command.LOGIN;
+			reply = Command.login;
 			this.wait();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	//TODO
 	private void logout(){
 		if (!connected)
 			return;
+		TransportObject toSend = new TransportObject(Command.logout);
+		try {
+			sent.writeObject(toSend);
+			isWaiting = true;
+			reply = Command.logout;
+			this.wait();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
-	//TODO
 	private boolean join(String gname){
-		TransportObject toSend = new TransportObject(Command.JOIN,gname);
+		TransportObject toSend = new TransportObject(Command.join, gname);
 		return false;
 	}
 	
-	//TODO
 	private boolean leave(String gname){
 		return false;
 	}
 	
-	//TODO
 	private void send(String dest, int sqn, String msg){
-		TransportObject toSend = new TransportObject(Command.SEND,dest,sqn,msg);
+		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
 		try {
 			sent.writeObject(toSend);
 		} catch (IOException e) {
@@ -115,41 +121,39 @@ public class ChatClient extends Thread{
 		try {
 			recObject = (TransportObject) received.readObject();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		if (recObject == null)
 			return;
+		
 		Command type = recObject.getCommand();
 		ServerReply servReply = recObject.getServerReply();
-		if (isWaiting && type.equals(reply)) {
-			if (reply.equals(Command.LOGIN)) {
-				if(servReply.equals(ServerReply.OK)) {
-					
-				} else if(servReply.equals(ServerReply.REJECTED)) {
-					
-				} else if(servReply.equals(ServerReply.QUEUED)) {
-					
-				}
-			} else if(reply.equals(Command.JOIN)){
-				if(servReply.equals(ServerReply.BAD_GROUP)){
-					
-				}else if(servReply.equals(ServerReply.OK_JOIN)){
-					
-				}else if(servReply.equals(ServerReply.OK_CREATE)){
-					
-				}else if(servReply.equals(ServerReply.FAIL_FULL)){
-					
-				}
-			}else if(reply.equals(Command.LEAVE)){
-				
-			}
-		}else if(type.equals(Command.SEND)){
-			
-		}else if(type.equals(Command.NONE)){
-			
-		}
 		
+		if (isWaiting && type.equals(reply)) {
+			if (reply.equals(Command.disconnect) || reply.equals(Command.login) || reply.equals(Command.logout)) {
+				output(type.toString() + " " + servReply.toString());
+				if (reply.equals(Command.disconnect))
+					connected = false;
+			}
+			else if (reply.equals(Command.join) || reply.equals(Command.leave))
+				output(type.toString() + " " + recObject.getGname() + " " + servReply.toString());
+			else if (reply.equals(Command.send))
+				output(reply.toString() + " " + recObject.getSQN() + " " + servReply.toString());
+			else
+				return;
+			
+			isWaiting = false;
+			this.notify();
+		} 
+		
+		else if (servReply.equals(ServerReply.sendack))
+			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");			
+		else if (servReply.equals(ServerReply.receive))
+			output(servReply.toString() + " " + recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
+		else if (servReply.equals(ServerReply.timeout)) {
+			output(servReply.toString());
+			connected = false;
+		}	
 	}
 	
 	private void sleep(int time){
@@ -168,16 +172,18 @@ public class ChatClient extends Thread{
 			e.printStackTrace();
 			return;
 		}
+		
 		String[] tokens = command.split(" ");
 		int args = tokens.length;
-		if(tokens.length == 0)
+		if (tokens.length == 0)
 			return;
-		if(tokens[0].equals("connect")){
+		
+		if (tokens[0].equals("connect")){
 			if(args != 2)
 				throw new Exception("invalid arguments for connect command");
 			tokens = tokens[1].split(":");
 			args = tokens.length;
-			if(args != 2)
+			if (args != 2)
 				throw new Exception("invalid arguments for connect command");
 			String hostname = tokens[0];
 			int port;
@@ -189,35 +195,35 @@ public class ChatClient extends Thread{
 			}
 			connect(hostname, port);
 		}
-		else if(tokens[0].equals("disconnect")) {
-			if(args != 1)
+		else if (tokens[0].equals("disconnect")) {
+			if (args != 1)
 				throw new Exception("invalid arguments for disconnect command");
 			disconnect();
 		}
-		else if(tokens[0].equals("login")) {
-			if(args != 2)
+		else if (tokens[0].equals("login")) {
+			if (args != 2)
 				throw new Exception("invalid arguments for login command");
 			String username = tokens[1];
 			login(username);
 		}
-		else if(tokens[0].equals("logout")) {
+		else if (tokens[0].equals("logout")) {
 			if(args != 1)
 				throw new Exception("invalid arguments for logout command");
 			logout();
 		}
-		else if(tokens[0].equals("join")) {
+		else if (tokens[0].equals("join")) {
 			if(args != 2)
 				throw new Exception("invalid arguments for join command");
 			String gname = tokens[1];
 			join(gname);
 		}
-		else if(tokens[0].equals("leave")) {
+		else if (tokens[0].equals("leave")) {
 			if(args != 2)
 				throw new Exception("invalid arguments for leave command");
 			String gname = tokens[1];
 			leave(gname);
 		}
-		else if(tokens[0].equals("send")) {
+		else if (tokens[0].equals("send")) {
 			if(args != 4)
 				throw new Exception("invalid arguments for send command");
 			String dest = tokens[1];
@@ -231,7 +237,7 @@ public class ChatClient extends Thread{
 			String msg = tokens[3];
 			send(dest,sqn,msg);
 		}
-		else if(tokens[0].equals("sleep")) {
+		else if (tokens[0].equals("sleep")) {
 			if(args != 2)
 				throw new Exception("invalid arguments for sleep command");
 			int time;
@@ -258,7 +264,6 @@ public class ChatClient extends Thread{
 			try {
 				processCommands();
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

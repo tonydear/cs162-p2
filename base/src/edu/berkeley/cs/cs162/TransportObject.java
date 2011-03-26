@@ -35,7 +35,7 @@ public class TransportObject implements Serializable {
 	//Client login, join, leave
 	public TransportObject(Command cmd, String in1) {
 		this(cmd);
-		if (cmd == Command.LOGIN)
+		if (cmd == Command.login)
 			username = in1; 
 		else 
 			gname = in1; 

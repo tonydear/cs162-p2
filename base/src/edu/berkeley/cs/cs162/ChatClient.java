@@ -180,6 +180,7 @@ public class ChatClient extends Thread{
 	
 	private void sleep(int time){
 		this.sleep(time);
+		output("sleep OK");
 	}
 	
 	public Map<String,ChatLog> getLogs(){

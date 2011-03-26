@@ -11,5 +11,7 @@ public enum ServerReply {
 	NOT_MEMBER,
 	BAD_DEST,
 	FAIL,
-	FAILED
+	FAILED,
+	receive,
+	timeout
 }

@@ -109,7 +109,6 @@ public class ChatClient extends Thread{
 			sent.writeObject(toSend);
 			this.wait();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return;
@@ -125,7 +124,6 @@ public class ChatClient extends Thread{
 			sent.writeObject(toSend);
 			this.wait();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return;
@@ -167,7 +165,7 @@ public class ChatClient extends Thread{
 				return;
 			
 			isWaiting = false;
-			this.notify();
+			synchronized(this) { this.notify(); }
 		} 
 		
 		else if (servReply.equals(ServerReply.sendack))
@@ -278,10 +276,6 @@ public class ChatClient extends Thread{
 		}
 	}
 	
-	private synchronized void signalReceive(){
-		
-	}
-	
 	@Override
 	public void run(){
 		while(true){
@@ -296,5 +290,4 @@ public class ChatClient extends Thread{
 	public static void main(String[] args){
 		ChatClient client = new ChatClient();
 	}
-	
 }

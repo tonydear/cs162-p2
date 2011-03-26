@@ -57,6 +57,8 @@ public class ChatClient extends Thread{
 	}
 	
 	private void disconnect(){
+		if(!connected)
+			return;
 		try {
 			mySocket.close();
 		} catch (IOException e) {
@@ -75,9 +77,9 @@ public class ChatClient extends Thread{
 			return;
 		TransportObject toSend = new TransportObject(Command.LOGIN,username);
 		try {
-			sent.writeObject(toSend);
 			isWaiting = true;
 			reply = Command.LOGIN;
+			sent.writeObject(toSend);
 			this.wait();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -90,13 +92,36 @@ public class ChatClient extends Thread{
 			return;
 	}
 	
-	private boolean join(String gname){
+	private void join(String gname){
+		if(!connected)
+			return;
 		TransportObject toSend = new TransportObject(Command.JOIN,gname);
-		return false;
+		try {
+			isWaiting = true;
+			reply = Command.JOIN;
+			sent.writeObject(toSend);
+			this.wait();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return;
 	}
 	
-	private boolean leave(String gname){
-		return false;
+	private void leave(String gname){
+		if(!connected)
+			return;
+		TransportObject toSend = new TransportObject(Command.LEAVE,gname);
+		try {
+			isWaiting = true;
+			reply = Command.LEAVE;
+			sent.writeObject(toSend);
+			this.wait();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return;
 	}
 	
 	private void send(String dest, int sqn, String msg){

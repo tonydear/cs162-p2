@@ -18,7 +18,7 @@ public class ChatClient extends Thread{
 	private ObjectOutputStream sent;
 	private Thread receiver;
 	private boolean connected;
-	private Command reply; //what should reply from server look like
+	private Command reply; 				//what reply from server should look like
 	private volatile boolean isWaiting; //waiting for reply from server?
 	
 	public ChatClient(){
@@ -50,7 +50,6 @@ public class ChatClient extends Thread{
 			connected = true;
 			output("connect OK");
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			output("connect REJECTED");
 			e.printStackTrace();
 		}
@@ -60,7 +59,6 @@ public class ChatClient extends Thread{
 		try {
 			mySocket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		output("disconnect OK");
@@ -70,8 +68,9 @@ public class ChatClient extends Thread{
 		System.out.append(o);
 	}
 	
+	//TODO
 	private void login(String username){
-		if(!connected)
+		if (!connected)
 			return;
 		TransportObject toSend = new TransportObject(Command.LOGIN,username);
 		try {
@@ -80,31 +79,33 @@ public class ChatClient extends Thread{
 			reply = Command.LOGIN;
 			this.wait();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
+	//TODO
 	private void logout(){
-		if(!connected)
+		if (!connected)
 			return;
 	}
 	
+	//TODO
 	private boolean join(String gname){
 		TransportObject toSend = new TransportObject(Command.JOIN,gname);
 		return false;
 	}
 	
+	//TODO
 	private boolean leave(String gname){
 		return false;
 	}
 	
+	//TODO
 	private void send(String dest, int sqn, String msg){
 		TransportObject toSend = new TransportObject(Command.SEND,dest,sqn,msg);
 		try {
 			sent.writeObject(toSend);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -117,20 +118,20 @@ public class ChatClient extends Thread{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if(recObject == null)
+		if (recObject == null)
 			return;
 		Command type = recObject.getCommand();
 		ServerReply servReply = recObject.getServerReply();
-		if(isWaiting && type.equals(reply)){
-			if(reply.equals(Command.LOGIN)){
-				if(servReply.equals(ServerReply.OK)){
+		if (isWaiting && type.equals(reply)) {
+			if (reply.equals(Command.LOGIN)) {
+				if(servReply.equals(ServerReply.OK)) {
 					
-				}else if(servReply.equals(ServerReply.REJECTED)){
+				} else if(servReply.equals(ServerReply.REJECTED)) {
 					
-				}else if(servReply.equals(ServerReply.QUEUED)){
+				} else if(servReply.equals(ServerReply.QUEUED)) {
 					
 				}
-			}else if(reply.equals(Command.JOIN)){
+			} else if(reply.equals(Command.JOIN)){
 				if(servReply.equals(ServerReply.BAD_GROUP)){
 					
 				}else if(servReply.equals(ServerReply.OK_JOIN)){

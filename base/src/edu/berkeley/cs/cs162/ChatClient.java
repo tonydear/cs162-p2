@@ -122,7 +122,7 @@ public class ChatClient extends Thread{
 		return logs;
 	}
 	
-	public synchronized void processCommands(){
+	public synchronized void processCommands() throws Exception {
 		String command = null;
 		try {
 			command = commands.readLine();
@@ -135,6 +135,30 @@ public class ChatClient extends Thread{
 			return;
 		if(tokens[0].equals("connect")){
 			
+		}
+		else if(tokens[0].equals("disconnect")) {
+			
+		}
+		else if(tokens[0].equals("login")) {
+			
+		}
+		else if(tokens[0].equals("logout")) {
+			
+		}
+		else if(tokens[0].equals("join")) {
+			
+		}
+		else if(tokens[0].equals("leave")) {
+			
+		}
+		else if(tokens[0].equals("send")) {
+			
+		}
+		else if(tokens[0].equals("sleep")) {
+			
+		}
+		else {
+			throw new Exception("invalid command");
 		}
 	}
 	

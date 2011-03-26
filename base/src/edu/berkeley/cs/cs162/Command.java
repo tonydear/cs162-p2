@@ -8,8 +8,5 @@ public enum Command {
 	JOIN,
 	LEAVE,
 	SEND,
-	SENDACK,
-	RECEIVE,
-	TIMEOUT,
-	SLEEP
+	SENDACK
 }

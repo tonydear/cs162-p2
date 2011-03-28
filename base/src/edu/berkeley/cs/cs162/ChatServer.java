@@ -103,11 +103,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			return LoginError.USER_REJECTED;
 		}
-		if (users.size() >= MAX_USERS) {
+		if (users.size() >= MAX_USERS) {		//exceeds capacity
 			lock.writeLock().unlock();
-			if(waiting_users.offer(username))
+			if(waiting_users.offer(username))	//attempt to add to waiting queue
 				return LoginError.USER_QUEUED;
-			else {
+			else {								//else drop user
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
 				return LoginError.USER_DROPPED;				
 			}

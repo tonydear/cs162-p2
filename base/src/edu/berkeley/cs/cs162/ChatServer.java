@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * This is the core of the chat server.  Put the management of groups
@@ -21,18 +23,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ChatServer extends Thread implements ChatServerInterface {
 
+	private BlockingQueue<String> waiting_users;
 	private Map<String, User> users;
 	private Map<String, ChatGroup> groups;
 	private Set<String> allNames;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
 	private final static int MAX_USERS = 100;
+	private final static int MAX_WAITING_USERS = 10;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
 		groups = new HashMap<String, ChatGroup>();
 		allNames = new HashSet<String>();
 		lock = new ReentrantReadWriteLock(true);
+		waiting_users = new ArrayBlockingQueue<String>(MAX_WAITING_USERS);
 		isDown = false;
 	}
 	
@@ -100,8 +105,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		}
 		if (users.size() >= MAX_USERS) {
 			lock.writeLock().unlock();
-			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
-			return LoginError.USER_DROPPED;
+			if(waiting_users.offer(username))
+				return LoginError.USER_QUEUED;
+			else {
+				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
+				return LoginError.USER_DROPPED;				
+			}
 		}
 		User newUser = new User(this, username);
 		users.put(username, newUser);
@@ -134,6 +143,17 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		users.get(username).logoff();
 		allNames.remove(username);
 		users.remove(username);
+		
+		// Check for waiting users
+		String uname = waiting_users.poll();
+		if(uname != null) {							//add to ChatServer
+			User newUser = new User(this, uname);
+			users.put(uname, newUser);
+			allNames.add(uname);
+			newUser.connected();
+			TestChatServer.logUserLogin(uname, new Date());
+		}
+		
 		lock.writeLock().unlock();	
 		return true;
 	}

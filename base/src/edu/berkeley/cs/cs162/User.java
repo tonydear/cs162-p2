@@ -1,6 +1,10 @@
 package edu.berkeley.cs.cs162;
 
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -13,6 +17,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class User extends BaseUser {
 	
 	private ChatServer server;
+	private Socket mySocket;
+	private ObjectInputStream received;
+	private ObjectOutputStream sent;
 	private String username;
 	private List<String> groupsJoined;
 	private Map<String, ChatLog> chatlogs;
@@ -31,6 +38,21 @@ public class User extends BaseUser {
 		sendLock = new ReentrantReadWriteLock(true);
 		sqn = 0;
 	}
+	
+	public boolean setSocket(Socket socket){ 
+		this.mySocket = socket;
+		try {
+			received = new ObjectInputStream(mySocket.getInputStream());
+			sent = new ObjectOutputStream(mySocket.getOutputStream());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}		
+		return true;
+	}
+	
+	public Socket getSocket(){ return mySocket;}
 	
 	public String getUsername() {
 		return username;

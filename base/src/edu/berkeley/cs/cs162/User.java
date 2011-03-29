@@ -212,13 +212,13 @@ public class User extends BaseUser {
 	}
 
 	public void disconnect() {
+		server.logoff(username);
 		try {
-			server.logoff(username);
 			TransportObject disconnAck = new TransportObject(Command.disconnect, ServerReply.OK);
 			sent.writeObject(disconnAck);
 			mySocket.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 	}
 	
@@ -251,10 +251,10 @@ public class User extends BaseUser {
 		try {
 			recv = (TransportObject) received.readObject();
 		} catch (Exception e) {
-			e.printStackTrace();
+			disconnect();
 		}
 		if (recv == null)
-			return;
+			disconnect();
 		
 		if (recv.getCommand() == Command.disconnect)
 			disconnect();

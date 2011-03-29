@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class User extends BaseUser {
@@ -21,6 +23,7 @@ public class User extends BaseUser {
 	private ObjectInputStream received;
 	private ObjectOutputStream sent;
 	private Thread receiver; 
+	private Thread sender;
 	private String username;
 	private List<String> groupsJoined;
 	private Map<String, ChatLog> chatlogs;
@@ -28,6 +31,7 @@ public class User extends BaseUser {
 	private ReentrantReadWriteLock sendLock;
 	private volatile boolean loggedOff;
 	private final static int MAX_SEND = 10000;
+	private BlockingQueue<TransportObject> queuedServerReplies;
 	
 	public User(ChatServer server, String username) {
 		this.server = server;
@@ -36,6 +40,11 @@ public class User extends BaseUser {
 		chatlogs = new HashMap<String, ChatLog>();
 		toSend = new LinkedList<MessageJob>();
 		sendLock = new ReentrantReadWriteLock(true);
+		queuedServerReplies = new ArrayBlockingQueue<TransportObject>(MAX_SEND);
+	}
+	
+	public boolean queueReply(TransportObject reply) {
+		return queuedServerReplies.add(reply);
 	}
 	
 	public boolean setSocket(Socket socket){ 
@@ -43,6 +52,18 @@ public class User extends BaseUser {
 		try {
 			received = new ObjectInputStream(mySocket.getInputStream());
 			sent = new ObjectOutputStream(mySocket.getOutputStream());
+			sender = new Thread(){
+				@Override
+				public void run(){
+					while(!loggedOff) {
+						try {
+							sent.writeObject(queuedServerReplies.poll());
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			};
 			receiver = new Thread(){
 	            @Override
 	            public void run(){
@@ -52,6 +73,7 @@ public class User extends BaseUser {
 	            }
 	        };
 	        receiver.start();
+	        sender.start();
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;
@@ -113,12 +135,7 @@ public class User extends BaseUser {
 			TestChatServer.logUserSendMsg(username, formattedMsg);
 			TestChatServer.logChatServerDropMsg(formattedMsg, new Date());
 			TransportObject toSend = new TransportObject(Command.send,sqn,ServerReply.FAIL);
-			try {
-				sent.writeObject(toSend);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			queueReply(toSend);
 			sendLock.writeLock().unlock();
 			return;
 		}
@@ -136,11 +153,8 @@ public class User extends BaseUser {
 		logRecvMsg(msg);
 		TestChatServer.logUserMsgRecvd(username, msg.toString(), new Date());
 		TransportObject toSend = new TransportObject(Command.send,msg.getDest(),msg.getSQN(),msg.getContent());
-		try {
-			sent.writeObject(toSend);
-		} catch (Exception e) {
+		if(!queueReply(toSend))
 			return false;
-		}
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());
 		return true;
 	}
@@ -190,21 +204,13 @@ public class User extends BaseUser {
 		} else if(status.equals(MsgSendError.MESSAGE_FAILED)){
 			toSend = new TransportObject(ServerReply.sendack,msgJob.sqn);
 		}
-		try {
-			sent.writeObject(toSend);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		queueReply(toSend);
 	}
 	
 	public void logoffAck() {
-		try {
-			server.logoff(username);
-			TransportObject logoutAck = new TransportObject(Command.logout, ServerReply.OK);
-			sent.writeObject(logoutAck);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		server.logoff(username);
+		TransportObject logoutAck = new TransportObject(Command.logout, ServerReply.OK);
+		queueReply(logoutAck);
 	}
 	
 	public ObjectOutputStream getOutputStream() {
@@ -215,7 +221,7 @@ public class User extends BaseUser {
 		server.logoff(username);
 		try {
 			TransportObject disconnAck = new TransportObject(Command.disconnect, ServerReply.OK);
-			sent.writeObject(disconnAck);
+			queueReply(disconnAck);
 			mySocket.close();
 		} catch (IOException e) {
 //			e.printStackTrace();

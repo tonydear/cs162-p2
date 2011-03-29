@@ -193,22 +193,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	
 	public void joinAck(User user, String gname, ServerReply reply) {
 		TransportObject toSend = new TransportObject(Command.join,gname,reply);
-		try {
-			user.getOutputStream().writeObject(toSend);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		user.queueReply(toSend);
 	}
 	
 	public void leaveAck(User user, String gname, ServerReply reply) {
 		TransportObject toSend = new TransportObject(Command.leave,gname,reply);
-		try {
-			user.getOutputStream().writeObject(toSend);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		user.queueReply(toSend);
 	}
 
 	public void startNewTimer(Socket socket) throws IOException {

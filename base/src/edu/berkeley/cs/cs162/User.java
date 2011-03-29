@@ -20,6 +20,7 @@ public class User extends BaseUser {
 	private Socket mySocket;
 	private ObjectInputStream received;
 	private ObjectOutputStream sent;
+	private Thread receiver; 
 	private String username;
 	private List<String> groupsJoined;
 	private Map<String, ChatLog> chatlogs;
@@ -44,6 +45,15 @@ public class User extends BaseUser {
 		try {
 			received = new ObjectInputStream(mySocket.getInputStream());
 			sent = new ObjectOutputStream(mySocket.getOutputStream());
+			receiver = new Thread(){
+	            @Override
+	            public void run(){
+	            	while(true){
+	            		processCommand();
+	            	}
+	            }
+	        };
+	        receiver.start();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -122,6 +132,13 @@ public class User extends BaseUser {
 	public void acceptMsg(Message msg) {
 		logRecvMsg(msg);
 		TestChatServer.logUserMsgRecvd(username, msg.toString(), new Date());
+		TransportObject toSend = new TransportObject(Command.send,msg.getDest(),msg.getSQN(),msg.getContent());
+		try {
+			sent.writeObject(toSend);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());
 	}
 	
@@ -158,13 +175,30 @@ public class User extends BaseUser {
 		loggedOff = true;
 	}
 	
+	public void ackClientSend(MsgSendError status,MessageJob msgJob){
+		TransportObject toSend = null;
+		if(status.equals(MsgSendError.MESSAGE_SENT)){
+			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.OK);
+		}else if(status.equals(MsgSendError.INVALID_DEST)){
+			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.BAD_DEST);
+		}else if(status.equals(MsgSendError.NOT_IN_GROUP)||status.equals(MsgSendError.INVALID_SOURCE)){
+			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.FAIL);
+		}
+		try {
+			sent.writeObject(toSend);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public void run() {
 		while(!loggedOff){
 			sendLock.writeLock().lock();
 			if(!toSend.isEmpty()) {
 				MessageJob msgJob = toSend.poll();
 				MsgSendError msgStatus = server.processMessage(username, msgJob.dest, msgJob.msg, msgJob.sqn, msgJob.timestamp);
-				// Do something with message send error
+				ackClientSend(msgStatus,msgJob);
 			}
 			sendLock.writeLock().unlock();
 		}

@@ -56,10 +56,12 @@ public class ChatGroup {
 		Collection<User> users = userlist.values();
 		Iterator<User> it = users.iterator();
 		User user;
+		boolean success = true;
 		while(it.hasNext()) {
 			user = it.next();
-			user.acceptMsg(msg);
+			if (!user.acceptMsg(msg))
+				success = false;
 		}
-		return true;
+		return success;
 	}
 }

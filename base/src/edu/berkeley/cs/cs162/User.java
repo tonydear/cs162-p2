@@ -132,16 +132,17 @@ public class User extends BaseUser {
 		sendLock.writeLock().unlock();
 	}
 	
-	public void acceptMsg(Message msg) {
+	public boolean acceptMsg(Message msg) {
 		logRecvMsg(msg);
 		TestChatServer.logUserMsgRecvd(username, msg.toString(), new Date());
 		TransportObject toSend = new TransportObject(Command.send,msg.getDest(),msg.getSQN(),msg.getContent());
 		try {
 			sent.writeObject(toSend);
 		} catch (Exception e) {
-			e.printStackTrace();
+			return false;
 		}
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());
+		return true;
 	}
 	
 	@Override

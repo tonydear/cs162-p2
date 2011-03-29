@@ -108,7 +108,7 @@ public class User extends BaseUser {
 	
 	public void send(String dest, String msg) {
 		sendLock.writeLock().lock();
-		if(loggedOff || toSend.size() >= MAX_SEND){
+		if(loggedOff || toSend.size() >= MAX_SEND) {
 			String timestamp = Long.toString(System.currentTimeMillis()/1000);
 			String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
 			sqn++;
@@ -135,7 +135,6 @@ public class User extends BaseUser {
 		try {
 			sent.writeObject(toSend);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());
@@ -170,31 +169,41 @@ public class User extends BaseUser {
 		log.add(msg);
 	}
 	
-	public void logoff(){
+	public void logoff() {
 		loggedOff = true;
 	}
 	
 
-	public void ackClientSend(MsgSendError status,MessageJob msgJob){
+	public void sendClientAck (MsgSendError status,MessageJob msgJob) {
 		TransportObject toSend = null;
-		if(status.equals(MsgSendError.MESSAGE_SENT)){
+		if (status.equals(MsgSendError.MESSAGE_SENT)) {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.OK);
-		}else if(status.equals(MsgSendError.INVALID_DEST)){
+		} else if (status.equals(MsgSendError.INVALID_DEST)) {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.BAD_DEST);
-		}else if(status.equals(MsgSendError.NOT_IN_GROUP)||status.equals(MsgSendError.INVALID_SOURCE)){
+		} else if (status.equals(MsgSendError.NOT_IN_GROUP) || status.equals(MsgSendError.INVALID_SOURCE)) {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.FAIL);
 		}
 		try {
 			sent.writeObject(toSend);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void logoffAck() {
+		try {
+			server.logoff(username);
+			TransportObject logoutAck = new TransportObject(Command.logout, ServerReply.OK);
+			sent.writeObject(logoutAck);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
 	public void disconnect() {
 		try {
 			server.logoff(username);
-			TransportObject disconnAck = new TransportObject(Command.disconnect);
+			TransportObject disconnAck = new TransportObject(Command.disconnect, ServerReply.OK);
 			sent.writeObject(disconnAck);
 			mySocket.close();
 		} catch (IOException e) {
@@ -205,15 +214,15 @@ public class User extends BaseUser {
 	public void run() {
 		while(!loggedOff){
 			sendLock.writeLock().lock();
-			if(!toSend.isEmpty()) {
+			if (!toSend.isEmpty()) {
 				MessageJob msgJob = toSend.poll();
 				MsgSendError msgStatus = server.processMessage(username, msgJob.dest, msgJob.msg, msgJob.sqn, msgJob.timestamp);
-				ackClientSend(msgStatus,msgJob);
+				sendClientAck(msgStatus,msgJob);
 			}
 			sendLock.writeLock().unlock();
 		}
 		sendLock.writeLock().lock();
-		while(!toSend.isEmpty()) {
+		while (!toSend.isEmpty()) {
 			MessageJob msgJob = toSend.poll();
 			String formattedMsg = username + " " + msgJob.dest + " " + System.currentTimeMillis()/1000 + "\t" + msgJob.sqn;
 			TestChatServer.logChatServerDropMsg(formattedMsg, new Date());

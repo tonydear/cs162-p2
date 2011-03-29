@@ -238,8 +238,6 @@ public class User extends BaseUser {
 		
 		if (recv.getCommand() == Command.disconnect)
 			disconnect();
-		else if (recv.getCommand() == Command.login)
-			server.login(username);
 		else if (recv.getCommand() == Command.logout)
 			server.logoff(username);
 		else if (recv.getCommand() == Command.join)

@@ -333,9 +333,18 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					Command type = recObject.getCommand();
 					if (type == Command.login) {
 						String username = recObject.getUsername();
-						login(username);
-						User newUser = (User) getUser(username);
-						newUser.setSocket(socket);
+						LoginError loginError = login(username);
+						TransportObject sendObject;
+						if (loginError == LoginError.USER_ACCEPTED) {
+							sendObject = new TransportObject(Command.login, ServerReply.OK);
+							User newUser = (User) getUser(username);
+							newUser.setSocket(socket);
+						} else if (loginError == LoginError.USER_QUEUED) {
+							sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
+						} else {
+							sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
+						}
+						
 					}
 				}
 				

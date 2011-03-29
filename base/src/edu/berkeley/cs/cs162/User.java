@@ -26,7 +26,6 @@ public class User extends BaseUser {
 	private Map<String, ChatLog> chatlogs;
 	private Queue<MessageJob> toSend;
 	private ReentrantReadWriteLock sendLock;
-	private int sqn;
 	private volatile boolean loggedOff;
 	private final static int MAX_SEND = 10000;
 	
@@ -37,7 +36,6 @@ public class User extends BaseUser {
 		chatlogs = new HashMap<String, ChatLog>();
 		toSend = new LinkedList<MessageJob>();
 		sendLock = new ReentrantReadWriteLock(true);
-		sqn = 0;
 	}
 	
 	public boolean setSocket(Socket socket){ 
@@ -106,7 +104,7 @@ public class User extends BaseUser {
 		return chatlogs;
 	}
 	
-	public void send(String dest, String msg) {
+	public void send(String dest, String msg, int sqn) {
 		sendLock.writeLock().lock();
 		if(loggedOff || toSend.size() >= MAX_SEND) {
 			String timestamp = Long.toString(System.currentTimeMillis()/1000);
@@ -114,10 +112,16 @@ public class User extends BaseUser {
 			sqn++;
 			TestChatServer.logUserSendMsg(username, formattedMsg);
 			TestChatServer.logChatServerDropMsg(formattedMsg, new Date());
+			TransportObject toSend = new TransportObject(Command.send,sqn,ServerReply.FAIL);
+			try {
+				sent.writeObject(toSend);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			sendLock.writeLock().unlock();
 			return;
 		}
-		
 		String timestamp = Long.toString(System.currentTimeMillis()/1000);
 		MessageJob msgJob = new MessageJob(dest,msg,sqn,timestamp);
 		String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
@@ -249,8 +253,10 @@ public class User extends BaseUser {
 			disconnect();
 		else if (recv.getCommand() == Command.login)
 			server.login(username);
-		else if (recv.getCommand() == Command.logout)
+		else if (recv.getCommand() == Command.logout) {
 			server.logoff(username);
+			server.startNewTimer(mySocket);
+		}
 		else if (recv.getCommand() == Command.join)
 			server.joinGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.leave)

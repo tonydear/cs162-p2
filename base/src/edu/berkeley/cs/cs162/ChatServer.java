@@ -361,6 +361,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 						} else {
 							sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
 						}
+						try {
+							sent.writeObject(sendObject);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 						
 					}
 				}

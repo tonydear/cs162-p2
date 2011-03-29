@@ -190,7 +190,23 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return true;
 	}
 
-	@Override
+	public void startNewTimer(Socket socket) {
+		List<Handler> task = new ArrayList<Handler>();
+		try {
+			task.add(new Handler(socket));
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		try {
+			pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+		@Override
 	public boolean joinGroup(BaseUser baseUser, String groupname) {
 		// TODO Auto-generated method stub
 		lock.writeLock().lock();
@@ -312,6 +328,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			}
 		}
 	}
+
 	
 	class Handler implements Callable<ChatServer.Handler>, Runnable {
 		private final Socket socket;
@@ -343,6 +360,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 							sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
 						} else {
 							sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
+						}
+						try {
+							sent.writeObject(sendObject);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
 						
 					}

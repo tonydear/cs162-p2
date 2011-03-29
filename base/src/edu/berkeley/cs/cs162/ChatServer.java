@@ -1,16 +1,28 @@
 package edu.berkeley.cs.cs162;
 
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is the core of the chat server.  Put the management of groups
@@ -31,6 +43,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private volatile boolean isDown;
 	private final static int MAX_USERS = 100;
 	private final static int MAX_WAITING_USERS = 10;
+	private ServerSocket mySocket;
+	private ExecutorService pool;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -39,6 +53,24 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<String>(MAX_WAITING_USERS);
 		isDown = false;
+		
+	}
+	
+	public ChatServer(int port) throws IOException {
+		users = new HashMap<String, User>();
+		groups = new HashMap<String, ChatGroup>();
+		allNames = new HashSet<String>();
+		lock = new ReentrantReadWriteLock(true);
+		waiting_users = new ArrayBlockingQueue<String>(MAX_WAITING_USERS);
+		isDown = false;
+		pool = Executors.newFixedThreadPool(100);
+		try {
+			mySocket = new ServerSocket(port);
+		} catch (Exception e) {
+			throw new IOException("Server socket creation failed");
+		}
+		
+		this.start();
 	}
 	
 	@Override
@@ -265,6 +297,62 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	@Override
 	public void run(){
 		while(!isDown){
+			List<Handler> task = new ArrayList<Handler>();
+			try {
+				task.add(new Handler(mySocket.accept()));
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			try {
+				pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
+	}
+	
+	class Handler implements Callable<ChatServer.Handler>, Runnable {
+		private final Socket socket;
+		    Handler(Socket socket) throws IOException { 
+		    	this.socket = socket;
+		    	received = new ObjectInputStream(socket.getInputStream());
+				sent = new ObjectOutputStream(socket.getOutputStream());
+		    }
+		    private ObjectInputStream received;
+			private ObjectOutputStream sent;
+		    public void run() {
+		    	TransportObject recObject = null;
+				try {
+					recObject = (TransportObject) received.readObject();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if (recObject != null) {
+					Command type = recObject.getCommand();
+					if (type == Command.login) {
+						String username = recObject.getUsername();
+						login(username);
+						User newUser = (User) getUser(username);
+						newUser.setSocket(socket);
+					}
+				}
+				
+				
+		    }
+			@Override
+			public Handler call() throws Exception {
+				// TODO Auto-generated method stub
+				return null;
+			}
+	}
+	
+	public static void main(String[] args) throws Exception{
+		if (args.length != 2) {
+			throw new Exception("Invalid number of args to command");
+		}
+		int port = Integer.parseInt(args[1]);
+		ChatServer chatServer = new ChatServer(port);
 	}
 }

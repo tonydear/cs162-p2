@@ -187,6 +187,8 @@ public class User extends BaseUser {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.BAD_DEST);
 		} else if (status.equals(MsgSendError.NOT_IN_GROUP) || status.equals(MsgSendError.INVALID_SOURCE)) {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.FAIL);
+		} else if(status.equals(MsgSendError.MESSAGE_FAILED)){
+			toSend = new TransportObject(ServerReply.sendack,msgJob.sqn);
 		}
 		try {
 			sent.writeObject(toSend);

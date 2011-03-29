@@ -288,11 +288,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			} else if (groups.containsKey(dest)) {
 				message.setIsFromGroup();
 				ChatGroup group = groups.get(dest);
-				if (!group.forwardMessage(message)) {
+				MsgSendError sendError = group.forwardMessage(message);
+				if (sendError==MsgSendError.NOT_IN_GROUP) {
 					TestChatServer.logChatServerDropMsg(message.toString(), new Date());
 					lock.readLock().unlock();
-					return MsgSendError.NOT_IN_GROUP;
-				}
+					return sendError;
+				} else if(sendError==MsgSendError.MESSAGE_FAILED)
+					return sendError;
 				
 			} else {
 				TestChatServer.logChatServerDropMsg(message.toString(), new Date());

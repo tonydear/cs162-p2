@@ -192,6 +192,7 @@ public class User extends BaseUser {
 			sent.writeObject(toSend);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

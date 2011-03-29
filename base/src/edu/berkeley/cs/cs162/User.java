@@ -26,7 +26,6 @@ public class User extends BaseUser {
 	private Map<String, ChatLog> chatlogs;
 	private Queue<MessageJob> toSend;
 	private ReentrantReadWriteLock sendLock;
-	private int sqn;
 	private volatile boolean loggedOff;
 	private final static int MAX_SEND = 10000;
 	
@@ -37,7 +36,6 @@ public class User extends BaseUser {
 		chatlogs = new HashMap<String, ChatLog>();
 		toSend = new LinkedList<MessageJob>();
 		sendLock = new ReentrantReadWriteLock(true);
-		sqn = 0;
 	}
 	
 	public boolean setSocket(Socket socket){ 
@@ -106,18 +104,24 @@ public class User extends BaseUser {
 		return chatlogs;
 	}
 	
-	public void send(String dest, String msg) {
+	public void send(String dest, String msg, int sqn) {
 		sendLock.writeLock().lock();
-		if(loggedOff || toSend.size() >= MAX_SEND){
+		if(loggedOff || toSend.size() >= MAX_SEND) {
 			String timestamp = Long.toString(System.currentTimeMillis()/1000);
 			String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
 			sqn++;
 			TestChatServer.logUserSendMsg(username, formattedMsg);
 			TestChatServer.logChatServerDropMsg(formattedMsg, new Date());
+			TransportObject toSend = new TransportObject(Command.send,sqn,ServerReply.FAIL);
+			try {
+				sent.writeObject(toSend);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			sendLock.writeLock().unlock();
 			return;
 		}
-		
 		String timestamp = Long.toString(System.currentTimeMillis()/1000);
 		MessageJob msgJob = new MessageJob(dest,msg,sqn,timestamp);
 		String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
@@ -128,17 +132,17 @@ public class User extends BaseUser {
 		sendLock.writeLock().unlock();
 	}
 	
-	public void acceptMsg(Message msg) {
+	public boolean acceptMsg(Message msg) {
 		logRecvMsg(msg);
 		TestChatServer.logUserMsgRecvd(username, msg.toString(), new Date());
 		TransportObject toSend = new TransportObject(Command.send,msg.getDest(),msg.getSQN(),msg.getContent());
 		try {
 			sent.writeObject(toSend);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return false;
 		}
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());
+		return true;
 	}
 	
 	@Override
@@ -170,24 +174,35 @@ public class User extends BaseUser {
 		log.add(msg);
 	}
 	
-	public void logoff(){
+	public void logoff() {
 		loggedOff = true;
 	}
 	
 
-	public void ackClientSend(MsgSendError status,MessageJob msgJob){
+	public void sendClientAck (MsgSendError status,MessageJob msgJob) {
 		TransportObject toSend = null;
-		if(status.equals(MsgSendError.MESSAGE_SENT)){
+		if (status.equals(MsgSendError.MESSAGE_SENT)) {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.OK);
-		}else if(status.equals(MsgSendError.INVALID_DEST)){
+		} else if (status.equals(MsgSendError.INVALID_DEST)) {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.BAD_DEST);
-		}else if(status.equals(MsgSendError.NOT_IN_GROUP)||status.equals(MsgSendError.INVALID_SOURCE)){
+		} else if (status.equals(MsgSendError.NOT_IN_GROUP) || status.equals(MsgSendError.INVALID_SOURCE)) {
 			toSend = new TransportObject(Command.send,msgJob.sqn,ServerReply.FAIL);
+		} else if(status.equals(MsgSendError.MESSAGE_FAILED)){
+			toSend = new TransportObject(ServerReply.sendack,msgJob.sqn);
 		}
 		try {
 			sent.writeObject(toSend);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void logoffAck() {
+		try {
+			server.logoff(username);
+			TransportObject logoutAck = new TransportObject(Command.logout, ServerReply.OK);
+			sent.writeObject(logoutAck);
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
@@ -199,7 +214,7 @@ public class User extends BaseUser {
 	public void disconnect() {
 		try {
 			server.logoff(username);
-			TransportObject disconnAck = new TransportObject(Command.disconnect);
+			TransportObject disconnAck = new TransportObject(Command.disconnect, ServerReply.OK);
 			sent.writeObject(disconnAck);
 			mySocket.close();
 		} catch (IOException e) {
@@ -210,15 +225,15 @@ public class User extends BaseUser {
 	public void run() {
 		while(!loggedOff){
 			sendLock.writeLock().lock();
-			if(!toSend.isEmpty()) {
+			if (!toSend.isEmpty()) {
 				MessageJob msgJob = toSend.poll();
 				MsgSendError msgStatus = server.processMessage(username, msgJob.dest, msgJob.msg, msgJob.sqn, msgJob.timestamp);
-				ackClientSend(msgStatus,msgJob);
+				sendClientAck(msgStatus,msgJob);
 			}
 			sendLock.writeLock().unlock();
 		}
 		sendLock.writeLock().lock();
-		while(!toSend.isEmpty()) {
+		while (!toSend.isEmpty()) {
 			MessageJob msgJob = toSend.poll();
 			String formattedMsg = username + " " + msgJob.dest + " " + System.currentTimeMillis()/1000 + "\t" + msgJob.sqn;
 			TestChatServer.logChatServerDropMsg(formattedMsg, new Date());
@@ -245,8 +260,10 @@ public class User extends BaseUser {
 			disconnect();
 		else if (recv.getCommand() == Command.login)
 			server.login(username);
-		else if (recv.getCommand() == Command.logout)
+		else if (recv.getCommand() == Command.logout) {
 			server.logoff(username);
+			server.startNewTimer(mySocket);
+		}
 		else if (recv.getCommand() == Command.join)
 			server.joinGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.leave)

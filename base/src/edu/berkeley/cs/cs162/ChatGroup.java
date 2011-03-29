@@ -50,16 +50,21 @@ public class ChatGroup {
 		return true;
 	}
 	
-	public synchronized boolean forwardMessage(Message msg) {
+	public synchronized MsgSendError forwardMessage(Message msg) {
 		if (! userlist.containsKey(msg.getSource()))
-			return false;
+			return MsgSendError.NOT_IN_GROUP;
 		Collection<User> users = userlist.values();
 		Iterator<User> it = users.iterator();
 		User user;
+		boolean success = true;
 		while(it.hasNext()) {
 			user = it.next();
-			user.acceptMsg(msg);
+			if (!user.acceptMsg(msg))
+				success = false;
 		}
-		return true;
+		if (success)
+			return MsgSendError.MESSAGE_SENT;
+		else 
+			return MsgSendError.MESSAGE_FAILED;
 	}
 }

@@ -189,6 +189,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock.writeLock().unlock();	
 		return true;
 	}
+	
+	public void joinAck(User user, String gname, ServerReply reply) {
+		TransportObject toSend = new TransportObject(Command.join,gname,reply);
+		try {
+			user.getOutputStream().writeObject(toSend);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	@Override
 	public boolean joinGroup(BaseUser baseUser, String groupname) {
@@ -206,11 +216,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			user.addToGroups(groupname);
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
+			if(success)
+				joinAck(user,groupname,ServerReply.OK_JOIN);
+			else
+				joinAck(user,groupname,ServerReply.FAIL_FULL);
 			lock.writeLock().unlock();
 			return success;
 		}
 		else {
 			if(allNames.contains(groupname)){
+				joinAck(user,groupname,ServerReply.BAD_GROUP);
 				lock.writeLock().unlock();
 				return false;
 			}
@@ -219,6 +234,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			user.addToGroups(groupname);
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
+			if(success)
+				joinAck(user,groupname,ServerReply.OK_CREATE);
+			else
+				joinAck(user,groupname,ServerReply.FAIL_FULL);
 			lock.writeLock().unlock();
 			return success;
 		}

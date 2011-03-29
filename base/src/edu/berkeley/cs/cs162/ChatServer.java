@@ -22,6 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -190,16 +191,18 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return true;
 	}
 
-	public void startNewTimer(Socket socket) {
+	public void startNewTimer(Socket socket) throws IOException {
 		List<Handler> task = new ArrayList<Handler>();
 		try {
 			task.add(new Handler(socket));
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
+		
 			pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+			List<Future<Handler>> futures = pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+			if (futures.get(0).isCancelled()) {
+				ObjectOutputStream sent = new ObjectOutputStream(socket.getOutputStream());
+				TransportObject sendObject = new TransportObject(ServerReply.timeout);
+				sent.writeObject(sendObject);
+			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -316,15 +319,20 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	public void run(){
 		while(!isDown){
 			List<Handler> task = new ArrayList<Handler>();
+			Socket newSocket;
 			try {
-				task.add(new Handler(mySocket.accept()));
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			try {
-				pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+				newSocket = mySocket.accept();
+				task.add(new Handler(newSocket));
+				List<Future<Handler>> futures = pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+				if (futures.get(0).isCancelled()) {
+					ObjectOutputStream sent = new ObjectOutputStream(newSocket.getOutputStream());
+					TransportObject sendObject = new TransportObject(ServerReply.timeout);
+					sent.writeObject(sendObject);
+				}
 			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}

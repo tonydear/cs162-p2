@@ -45,7 +45,6 @@ public class User extends BaseUser {
 			received = new ObjectInputStream(mySocket.getInputStream());
 			sent = new ObjectOutputStream(mySocket.getOutputStream());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return false;
 		}		
@@ -158,6 +157,17 @@ public class User extends BaseUser {
 		loggedOff = true;
 	}
 	
+	public void disconnect() {
+		try {
+			server.logoff(username);
+			TransportObject disconnAck = new TransportObject(Command.disconnect);
+			sent.writeObject(disconnAck);
+			mySocket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public void run() {
 		while(!loggedOff){
 			sendLock.writeLock().lock();
@@ -180,5 +190,29 @@ public class User extends BaseUser {
 		}
 		groupsJoined.clear();
 		TestChatServer.logUserLogout(username, new Date());
+	}
+	
+	public void processCommand() {
+		TransportObject recv = null;
+		try {
+			recv = (TransportObject) received.readObject();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (recv == null)
+			return;
+		
+		if (recv.getCommand() == Command.disconnect)
+			disconnect();
+		else if (recv.getCommand() == Command.login)
+			server.login(username);
+		else if (recv.getCommand() == Command.logout)
+			server.logoff(username);
+		else if (recv.getCommand() == Command.join)
+			server.joinGroup(this, recv.getGname());
+		else if (recv.getCommand() == Command.leave)
+			server.leaveGroup(this, recv.getGname());
+		else if (recv.getCommand() == Command.send)
+			send(recv.getDest(), recv.getMessage());
 	}
 }

@@ -190,6 +190,26 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock.writeLock().unlock();	
 		return true;
 	}
+	
+	public void joinAck(User user, String gname, ServerReply reply) {
+		TransportObject toSend = new TransportObject(Command.join,gname,reply);
+		try {
+			user.getOutputStream().writeObject(toSend);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void leaveAck(User user, String gname, ServerReply reply) {
+		TransportObject toSend = new TransportObject(Command.leave,gname,reply);
+		try {
+			user.getOutputStream().writeObject(toSend);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	public void startNewTimer(Socket socket) throws IOException {
 		List<Handler> task = new ArrayList<Handler>();
@@ -225,11 +245,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			user.addToGroups(groupname);
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
+			if(success)
+				joinAck(user,groupname,ServerReply.OK_JOIN);
+			else
+				joinAck(user,groupname,ServerReply.FAIL_FULL);
 			lock.writeLock().unlock();
 			return success;
 		}
 		else {
 			if(allNames.contains(groupname)){
+				joinAck(user,groupname,ServerReply.BAD_GROUP);
 				lock.writeLock().unlock();
 				return false;
 			}
@@ -238,6 +263,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			user.addToGroups(groupname);
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
+			if(success)
+				joinAck(user,groupname,ServerReply.OK_CREATE);
+			else
+				joinAck(user,groupname,ServerReply.FAIL_FULL);
 			lock.writeLock().unlock();
 			return success;
 		}
@@ -250,10 +279,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock.writeLock().lock();
 		ChatGroup group = groups.get(groupname);
 		if (group == null){
+			leaveAck(user,groupname,ServerReply.BAD_GROUP);
 			lock.writeLock().unlock();
 			return false;
 		}
 		if(group.leaveGroup(user.getUsername())) {
+			leaveAck(user,groupname,ServerReply.OK);
 			if(group.getNumUsers() <= 0) { 
 				groups.remove(group.getName()); 
 				allNames.remove(group.getName());
@@ -262,6 +293,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());
 			lock.writeLock().unlock();
 			return true;
+		}
+		else {
+			leaveAck(user,groupname,ServerReply.NOT_MEMBER);
 		}
 		lock.writeLock().unlock();
 		return false;

@@ -50,9 +50,9 @@ public class ChatGroup {
 		return true;
 	}
 	
-	public synchronized boolean forwardMessage(Message msg) {
+	public synchronized MsgSendError forwardMessage(Message msg) {
 		if (! userlist.containsKey(msg.getSource()))
-			return false;
+			return MsgSendError.NOT_IN_GROUP;
 		Collection<User> users = userlist.values();
 		Iterator<User> it = users.iterator();
 		User user;
@@ -62,6 +62,9 @@ public class ChatGroup {
 			if (!user.acceptMsg(msg))
 				success = false;
 		}
-		return success;
+		if (success)
+			return MsgSendError.MESSAGE_SENT;
+		else 
+			return MsgSendError.MESSAGE_FAILED;
 	}
 }

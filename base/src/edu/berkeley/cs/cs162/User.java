@@ -191,6 +191,10 @@ public class User extends BaseUser {
 			e.printStackTrace();
 		}
 	}
+	
+	public ObjectOutputStream getOutputStream() {
+		return sent;
+	}
 
 	public void disconnect() {
 		try {

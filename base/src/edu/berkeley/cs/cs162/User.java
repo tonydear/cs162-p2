@@ -262,7 +262,12 @@ public class User extends BaseUser {
 			server.login(username);
 		else if (recv.getCommand() == Command.logout) {
 			server.logoff(username);
-			server.startNewTimer(mySocket);
+			try {
+				server.startNewTimer(mySocket);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		else if (recv.getCommand() == Command.join)
 			server.joinGroup(this, recv.getGname());

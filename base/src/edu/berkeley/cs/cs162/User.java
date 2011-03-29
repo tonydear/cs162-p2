@@ -46,7 +46,7 @@ public class User extends BaseUser {
 			receiver = new Thread(){
 	            @Override
 	            public void run(){
-	            	while(true){
+	            	while(!loggedOff){
 	            		processCommand();
 	            	}
 	            }

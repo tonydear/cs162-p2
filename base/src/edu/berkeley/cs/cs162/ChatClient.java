@@ -17,7 +17,7 @@ public class ChatClient extends Thread{
 	private ObjectInputStream received;
 	private ObjectOutputStream sent;
 	private Thread receiver;
-	private boolean connected;
+	private volatile boolean connected;
 	private Command reply; 				//what reply from server should look like
 	private volatile boolean isWaiting; //waiting for reply from server?
 	
@@ -38,7 +38,6 @@ public class ChatClient extends Thread{
             	}
             }
         };
-        receiver.start();
         start();
 	}
 	
@@ -49,6 +48,7 @@ public class ChatClient extends Thread{
 			sent = new ObjectOutputStream(mySocket.getOutputStream());
 			connected = true;
 			output("connect OK");
+	        receiver.start();
 		} catch (Exception e) {
 			output("connect REJECTED");
 			e.printStackTrace();
@@ -144,9 +144,12 @@ public class ChatClient extends Thread{
 			recObject = (TransportObject) received.readObject();
 		} catch (Exception e) {
 			e.printStackTrace();
+			connected = false;
 		}
-		if (recObject == null)
+		if (recObject == null){
+			connected = false;
 			return;
+		}
 		
 		Command type = recObject.getCommand();
 		ServerReply servReply = recObject.getServerReply();

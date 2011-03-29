@@ -33,7 +33,7 @@ public class ChatClient extends Thread{
 		receiver = new Thread(){
             @Override
             public void run(){
-            	while(true){
+            	while(connected){
             		receive();
             	}
             }

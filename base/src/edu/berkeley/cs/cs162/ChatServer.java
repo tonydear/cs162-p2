@@ -187,6 +187,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			waiting_sockets.remove(uname);
 			users.put(uname, newUser);
 			allNames.add(uname);
+			TransportObject reply = new TransportObject(Command.login, ServerReply.OK);
+			newUser.queueReply(reply);
 			newUser.connected();
 			TestChatServer.logUserLogin(uname, new Date());
 		}

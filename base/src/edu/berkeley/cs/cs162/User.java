@@ -56,9 +56,16 @@ public class User extends BaseUser {
 				@Override
 				public void run(){
 					while(!loggedOff) {
+						TransportObject reply = null;
 						try {
-							sent.writeObject(queuedServerReplies.poll());
+							reply = queuedServerReplies.poll();
+							sent.writeObject(reply);
 						} catch (Exception e) {
+							if(reply.getCommand().equals(Command.send)) {
+								User sender = (User) server.getUser(reply.getSender());
+								TransportObject error = new TransportObject(ServerReply.sendack,reply.getSQN());
+								sender.queueReply(error);
+							}
 							e.printStackTrace();
 						}
 					}

@@ -46,6 +46,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private final static int MAX_WAITING_USERS = 10;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
+	private Map<String, Socket> waiting_sockets;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -70,7 +71,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
-		
+		waiting_sockets = new HashMap<String, Socket>();
 		this.start();
 	}
 	
@@ -181,6 +182,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		String uname = waiting_users.poll();
 		if(uname != null) {							//add to ChatServer
 			User newUser = new User(this, uname);
+			Socket socket = waiting_sockets.get(uname);
+			newUser.setSocket(socket);
+			waiting_sockets.remove(uname);
 			users.put(uname, newUser);
 			allNames.add(uname);
 			newUser.connected();
@@ -392,6 +396,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 							newUser.setSocket(socket);
 						} else if (loginError == LoginError.USER_QUEUED) {
 							sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
+							waiting_sockets.put(username, socket);
 						} else {
 							sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
 						}

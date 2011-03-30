@@ -20,6 +20,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -71,7 +72,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
-		waiting_sockets = new HashMap<String, Socket>();
+		waiting_sockets = new ConcurrentHashMap<String, Socket>();
 		this.start();
 	}
 	

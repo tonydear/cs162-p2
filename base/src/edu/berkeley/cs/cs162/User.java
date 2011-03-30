@@ -63,8 +63,10 @@ public class User extends BaseUser {
 						} catch (Exception e) {
 							if(reply.getCommand().equals(Command.send)) {
 								User sender = (User) server.getUser(reply.getSender());
-								TransportObject error = new TransportObject(ServerReply.sendack,reply.getSQN());
-								sender.queueReply(error);
+								if(sender!=null){
+									TransportObject error = new TransportObject(ServerReply.sendack,reply.getSQN());
+									sender.queueReply(error);
+								}
 							}
 							e.printStackTrace();
 						}

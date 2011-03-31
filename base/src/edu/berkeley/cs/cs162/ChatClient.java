@@ -144,8 +144,11 @@ public class ChatClient extends Thread{
 	private void send(String dest, int sqn, String msg){
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
 		try {
+			isWaiting = true;
+			reply = Command.send;
 			sent.writeObject(toSend);
-		} catch (IOException e) {
+			this.wait();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -188,10 +191,13 @@ public class ChatClient extends Thread{
 			}
 			else if (reply.equals(Command.join) || reply.equals(Command.leave))
 				output(type.toString() + " " + recObject.getGname() + " " + servReply.toString());
-			else
+			else if (reply.equals(Command.send))
+				output(type.toString() + " " + recObject.getSQN() + " " + servReply.toString());
+			else	
 				return;
 			
 			isWaiting = false;
+			reply = null;
 			synchronized(this) { this.notify(); }
 		} 
 		
@@ -202,10 +208,8 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
-		}else if (type.equals(Command.send))
-			output(type.toString() + " " + recObject.getSQN() + " " + servReply.toString());
-		else{
-			System.out.println("What kind of server reply is this?");
+		}else {
+			System.out.println("What kind of server reply is this? " + reply);
 		}
 	}
 	

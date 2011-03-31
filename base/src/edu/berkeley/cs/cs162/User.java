@@ -276,7 +276,7 @@ public class User extends BaseUser {
 		} else if (recv.getCommand() == Command.logout) {
 			server.logoff(username);
 			try {
-				server.startNewTimer(mySocket);
+				server.startNewTimer(new SocketParams(mySocket, received, sent));
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -208,15 +208,15 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		user.queueReply(toSend);
 	}
 
-	public void startNewTimer(Socket socket) throws IOException {
+	public void startNewTimer(SocketParams params) throws IOException {
 		List<Handler> task = new ArrayList<Handler>();
 		try {
-			task.add(new Handler(socket));
-		
+			task.add(new Handler(params));
+			ObjectOutputStream sent = params.getOutputStream();
 			pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
 			List<Future<Handler>> futures = pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
 			if (futures.get(0).isCancelled()) {
-				ObjectOutputStream sent = new ObjectOutputStream(socket.getOutputStream());
+				
 				TransportObject sendObject = new TransportObject(ServerReply.timeout);
 				sent.writeObject(sendObject);
 			}
@@ -382,6 +382,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		    	this.socket = socket;
 		    	received = new ObjectInputStream(socket.getInputStream());
 				sent = new ObjectOutputStream(socket.getOutputStream());
+		    }
+		    
+		    Handler(SocketParams params) {
+		    	this.socket = params.getMySocket();
+		    	received = params.getInputStream();
+		    	sent = params.getOutputStream();
 		    }
 		    private ObjectInputStream received;
 			private ObjectOutputStream sent;

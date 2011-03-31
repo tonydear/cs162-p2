@@ -47,7 +47,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private final static int MAX_WAITING_USERS = 10;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
-	private Map<String, Socket> waiting_sockets;
+	private Map<String, SocketParams> waiting_sockets;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -72,7 +72,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
-		waiting_sockets = new ConcurrentHashMap<String, Socket>();
+		waiting_sockets = new ConcurrentHashMap<String, SocketParams>();
 		this.start();
 	}
 	
@@ -183,8 +183,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		String uname = waiting_users.poll();
 		if(uname != null) {							//add to ChatServer
 			User newUser = new User(this, uname);
-			Socket socket = waiting_sockets.get(uname);
-			newUser.setSocket(socket);
+			SocketParams socket = waiting_sockets.get(uname);
+			newUser.setSocket(socket.getMySocket(), socket.getInputStream(), socket.getOutputStream());
 			waiting_sockets.remove(uname);
 			users.put(uname, newUser);
 			allNames.add(uname);
@@ -353,12 +353,17 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			Socket newSocket;
 			try {
 				newSocket = mySocket.accept();
-				task.add(new Handler(newSocket));
+				Handler handler = new Handler(newSocket);
+				task.add(handler);
+				System.out.println("new socket request received");
 				List<Future<Handler>> futures = pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
-					ObjectOutputStream sent = new ObjectOutputStream(newSocket.getOutputStream());
+					ObjectOutputStream sent = handler.sent;
+					//ObjectInputStream received = new ObjectInputStream(newSocket.getInputStream());
+					
 					TransportObject sendObject = new TransportObject(ServerReply.timeout);
 					sent.writeObject(sendObject);
+					System.out.println("client timing out");
 				}
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -381,44 +386,54 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		    private ObjectInputStream received;
 			private ObjectOutputStream sent;
 		    public void run() {
-		    	TransportObject recObject = null;
-				try {
-					recObject = (TransportObject) received.readObject();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				if (recObject != null) {
-					Command type = recObject.getCommand();
-					if (type == Command.login) {
-						String username = recObject.getUsername();
-						LoginError loginError = login(username);
-						TransportObject sendObject;
-						if (loginError == LoginError.USER_ACCEPTED) {
-							sendObject = new TransportObject(Command.login, ServerReply.OK);
-							User newUser = (User) getUser(username);
-							newUser.setSocket(socket);
-						} else if (loginError == LoginError.USER_QUEUED) {
-							sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
-							waiting_sockets.put(username, socket);
-						} else {
-							sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
-						}
-						try {
-							sent.writeObject(sendObject);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						
-					}
-				}
-				
-				
+		    		
 		    }
 			@Override
 			public Handler call() throws Exception {
-				// TODO Auto-generated method stub
-				return null;
+				System.out.println("starting run method of new handler");
+		    	TransportObject recObject = null;
+		    	while(recObject == null) {
+			    	System.out.println("polling for login command");
+					try {
+						recObject = (TransportObject) received.readObject();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					if (recObject != null) {
+						
+						Command type = recObject.getCommand();
+						System.out.println("received first command " + type.toString());
+						if (type == Command.login) {
+							String username = recObject.getUsername();
+							LoginError loginError = login(username);
+							TransportObject sendObject;
+							if (loginError == LoginError.USER_ACCEPTED) {
+								sendObject = new TransportObject(Command.login, ServerReply.OK);
+								System.out.println("created new transport object");
+								User newUser = (User) getUser(username);
+								System.out.println("got new user");
+								newUser.setSocket(socket, received, sent);
+								System.out.println("just set socket on new user");
+							} else if (loginError == LoginError.USER_QUEUED) {
+								sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
+								waiting_sockets.put(username, new SocketParams(socket, received, sent));
+							} else {
+								sendObject = new TransportObject(ServerReply.error);
+								recObject = null;
+							}
+							try {
+								System.out.println("sending new object woot " + sendObject);
+								sent.writeObject(sendObject);
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+						}
+					}
+		    	}
+		    	return null;
+			
 			}
 	}
 	

@@ -17,7 +17,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class User extends BaseUser {
-	
+
 	private ChatServer server;
 	private Socket mySocket;
 	private ObjectInputStream received;
@@ -32,7 +32,7 @@ public class User extends BaseUser {
 	private volatile boolean loggedOff;
 	private final static int MAX_SEND = 10000;
 	private BlockingQueue<TransportObject> queuedServerReplies;
-	
+
 	public User(ChatServer server, String username) {
 		this.server = server;
 		this.username = username;
@@ -42,99 +42,96 @@ public class User extends BaseUser {
 		sendLock = new ReentrantReadWriteLock(true);
 		queuedServerReplies = new ArrayBlockingQueue<TransportObject>(MAX_SEND);
 	}
-	
+
 	public boolean queueReply(TransportObject reply) {
 		return queuedServerReplies.add(reply);
 	}
-	
-	public boolean setSocket(Socket socket){ 
+
+	public boolean setSocket(Socket socket, ObjectInputStream receivedParam, ObjectOutputStream sentParam){ 
 		this.mySocket = socket;
-		try {
-			received = new ObjectInputStream(mySocket.getInputStream());
-			sent = new ObjectOutputStream(mySocket.getOutputStream());
-			sender = new Thread(){
-				@Override
-				public void run(){
-					while(!loggedOff) {
-						TransportObject reply = null;
-						try {
-							reply = queuedServerReplies.poll();
-							sent.writeObject(reply);
-						} catch (Exception e) {
-							if(reply.getCommand().equals(Command.send)) {
-								User sender = (User) server.getUser(reply.getSender());
-								if(sender!=null){
-									TransportObject error = new TransportObject(ServerReply.sendack,reply.getSQN());
-									sender.queueReply(error);
-								}
+
+		this.received = receivedParam;
+		this.sent = sentParam;
+		sender = new Thread(){
+			@Override
+			public void run(){
+				while(!loggedOff) {
+					TransportObject reply = null;
+					try {
+						reply = queuedServerReplies.poll();
+						sent.writeObject(reply);
+					} catch (Exception e) {
+						if(reply.getCommand().equals(Command.send)) {
+							User sender = (User) server.getUser(reply.getSender());
+							if(sender!=null){
+								TransportObject error = new TransportObject(ServerReply.sendack,reply.getSQN());
+								sender.queueReply(error);
 							}
-							e.printStackTrace();
 						}
+						e.printStackTrace();
 					}
 				}
-			};
-			receiver = new Thread(){
-	            @Override
-	            public void run(){
-	            	while(!loggedOff){
-	            		processCommand();
-	            	}
-	            }
-	        };
-	        receiver.start();
-	        sender.start();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-		}		
+			}
+		};
+		receiver = new Thread(){
+			@Override
+			public void run(){
+				while(!loggedOff){
+					processCommand();
+				}
+			}
+		};
+		receiver.start();
+		sender.start();
 		return true;
+
 	}
-	
+
 	public Socket getSocket(){ return mySocket;}
-	
+
 	public String getUsername() {
 		return username;
 	}
-	
+
 	public List<String> getUserGroups() {
 		return groupsJoined;
 	}
-	
+
 	public Set<String> getAllUsers() {
 		return server.getUsers();
 	}
-	
+
 	public Set<String> getAllGroups() { 
 		return server.getGroups();
 	}
-	
+
 	public int getNumUsers() {
 		return server.getNumUsers();
 	}
-	
+
 	public int getNumGroups() {
 		return server.getNumGroups();
 	}
-	
+
 	public void addToGroups(String group) {
 		groupsJoined.add(group);
 	}
-	
+
 	public void removeFromGroups(String group) {
 		groupsJoined.remove(group);
 	}
-	
+
 	public ChatLog getLog(String name){
 		if(chatlogs.containsKey(name)){
 			return chatlogs.get(name);
 		}
 		return null;
 	}
-	
+
 	public Map<String, ChatLog> getLogs() {
 		return chatlogs;
 	}
-	
+
 	public void send(String dest, String msg, int sqn) {
 		sendLock.writeLock().lock();
 		if(loggedOff || toSend.size() >= MAX_SEND) {
@@ -157,7 +154,7 @@ public class User extends BaseUser {
 		toSend.add(msgJob);
 		sendLock.writeLock().unlock();
 	}
-	
+
 	public boolean acceptMsg(Message msg) {
 		logRecvMsg(msg);
 		TestChatServer.logUserMsgRecvd(username, msg.toString(), new Date());
@@ -167,7 +164,7 @@ public class User extends BaseUser {
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());
 		return true;
 	}
-	
+
 	@Override
 	public void msgReceived(String msg) {
 		System.out.println(msg);
@@ -177,7 +174,7 @@ public class User extends BaseUser {
 		// Add to chatlog
 		ChatLog log;
 		String reference;
-		
+
 		if (msg.isFromGroup())
 			reference = msg.getDest();
 		else
@@ -190,17 +187,17 @@ public class User extends BaseUser {
 				log = new ChatLog(msg.getSource(), this, msg.getDest());
 			else
 				log = new ChatLog(msg.getSource(), this);
-			
+
 			chatlogs.put(reference, log);
 		}
-		
+
 		log.add(msg);
 	}
-	
+
 	public void logoff() {
 		loggedOff = true;
 	}
-	
+
 
 	public void sendClientAck (MsgSendError status,MessageJob msgJob) {
 		TransportObject toSend = null;
@@ -215,13 +212,13 @@ public class User extends BaseUser {
 		}
 		queueReply(toSend);
 	}
-	
+
 	public void logoffAck() {
 		server.logoff(username);
 		TransportObject logoutAck = new TransportObject(Command.logout, ServerReply.OK);
 		queueReply(logoutAck);
 	}
-	
+
 	public ObjectOutputStream getOutputStream() {
 		return sent;
 	}
@@ -233,10 +230,10 @@ public class User extends BaseUser {
 			queueReply(disconnAck);
 			mySocket.close();
 		} catch (IOException e) {
-//			e.printStackTrace();
+			//			e.printStackTrace();
 		}
 	}
-	
+
 	public void run() {
 		while(!loggedOff){
 			sendLock.writeLock().lock();
@@ -260,7 +257,7 @@ public class User extends BaseUser {
 		groupsJoined.clear();
 		TestChatServer.logUserLogout(username, new Date());
 	}
-	
+
 	public void processCommand() {
 		TransportObject recv = null;
 		try {
@@ -270,12 +267,13 @@ public class User extends BaseUser {
 		}
 		if (recv == null)
 			disconnect();
-		
+
 		if (recv.getCommand() == Command.disconnect)
 			disconnect();
-		else if (recv.getCommand() == Command.login)
-			server.login(username);
-		else if (recv.getCommand() == Command.logout) {
+		else if (recv.getCommand() == Command.login) {
+			TransportObject send = new TransportObject(Command.login, ServerReply.REJECTED);
+			queueReply(send);
+		} else if (recv.getCommand() == Command.logout) {
 			server.logoff(username);
 			try {
 				server.startNewTimer(mySocket);

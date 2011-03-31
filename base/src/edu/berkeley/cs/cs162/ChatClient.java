@@ -2,6 +2,7 @@ package edu.berkeley.cs.cs162;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -35,7 +36,9 @@ public class ChatClient extends Thread{
 		receiver = new Thread(){
             @Override
             public void run(){
+            	System.out.println("receiver running connected is " + connected);
             	while(connected){
+            		//System.out.println("receiver receiving new response from server");
             		receive();
             	}
             }
@@ -46,8 +49,10 @@ public class ChatClient extends Thread{
 	private void connect(String hostname, int port){
 		try {
 			mySocket = new Socket(hostname,port);
-			received = new ObjectInputStream(mySocket.getInputStream());
 			sent = new ObjectOutputStream(mySocket.getOutputStream());
+			InputStream input = mySocket.getInputStream();
+			received = new ObjectInputStream(input);
+			
 			connected = true;
 			output("connect OK");
 	        receiver.start();
@@ -143,20 +148,32 @@ public class ChatClient extends Thread{
 	private void receive(){
 		TransportObject recObject = null;
 		try {
+			//System.out.println("going to wait for new object");
+			/*
+			Object o = received.readObject();
+			if(o!=null)
+				System.out.println(o);
+			recObject = (TransportObject) o;
+			*/
 			recObject = (TransportObject) received.readObject();
+			//System.out.println("new recObject received");
 		} catch (Exception e) {
 			e.printStackTrace();
 			connected = false;
 		}
+		
 		if (recObject == null){
-			connected = false;
+			//connected = false;
+			
 			return;
 		}
-		
 		Command type = recObject.getCommand();
 		ServerReply servReply = recObject.getServerReply();
-		
-		if (isWaiting && type.equals(reply)) {
+		System.out.println("isWaiting " + isWaiting + " command type " + type);
+		if (servReply.equals(ServerReply.error)) {
+			System.err.println("Error");
+		} else if (isWaiting && type.equals(reply)) {
+			System.out.println("Got to this line");
 			if (reply.equals(Command.disconnect) || reply.equals(Command.login) || reply.equals(Command.logout)) {
 				output(type.toString() + " " + servReply.toString());
 				if (reply.equals(Command.disconnect))
@@ -180,7 +197,7 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
-		}	
+		}
 	}
 	
 	private void sleep(int time){
@@ -200,7 +217,6 @@ public class ChatClient extends Thread{
 			e.printStackTrace();
 			return;
 		}
-		
 		String[] tokens = command.split(" ");
 		int args = tokens.length;
 		if (tokens.length == 0)

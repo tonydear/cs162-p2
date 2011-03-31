@@ -14,5 +14,6 @@ public enum ServerReply {
 	FAIL,
 	sendack,
 	receive,
-	timeout
+	timeout,
+	error
 }

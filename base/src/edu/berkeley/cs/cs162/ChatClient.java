@@ -33,17 +33,7 @@ public class ChatClient extends Thread{
 		connected = false;
 		isWaiting = false;
 		reply = null;
-		
-		receiver = new Thread(){
-            @Override
-            public void run(){
-            	System.out.println("receiver running connected is " + connected);
-            	while(connected){
-            		//System.out.println("receiver receiving new response from server");
-            		receive();
-            	}
-            }
-        };
+		receiver = null;
         start();
 	}
 	
@@ -56,10 +46,21 @@ public class ChatClient extends Thread{
 			
 			connected = true;
 			output("connect OK");
-			if(!receiver.isAlive())
+			if(receiver == null || !receiver.isAlive()) {
+				receiver = new Thread(){
+		            @Override
+		            public void run(){
+		            	System.out.println("receiver running connected is " + connected);
+		            	while(connected){
+		            		//System.out.println("receiver receiving new response from server");
+		            		receive();
+		            	}
+		            }
+		        };
 				receiver.start();
+			}
 		} catch (IllegalThreadStateException e) {
-
+			e.printStackTrace();
 		} catch (Exception e) {
 			output("connect REJECTED");
 			e.printStackTrace();

@@ -142,11 +142,14 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			return LoginError.USER_REJECTED;
 		}
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
-			lock.writeLock().unlock();
-			if(waiting_users.offer(username))	//attempt to add to waiting queue
+			if(waiting_users.offer(username)) {	//attempt to add to waiting queue 
+				allNames.add(username);
+				lock.writeLock().unlock();
 				return LoginError.USER_QUEUED;
+			}
 			else {								//else drop user
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
+				lock.writeLock().unlock();
 				return LoginError.USER_DROPPED;				
 			}
 		}
@@ -190,7 +193,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			newUser.setSocket(socket.getMySocket(), socket.getInputStream(), socket.getOutputStream());
 			waiting_sockets.remove(uname);
 			users.put(uname, newUser);
-			allNames.add(uname);
 			TransportObject reply = new TransportObject(Command.login, ServerReply.OK);
 			newUser.queueReply(reply);
 			newUser.connected();

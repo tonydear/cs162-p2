@@ -267,8 +267,7 @@ public class User extends BaseUser {
 		}
 		if (recv == null)
 			disconnect();
-
-		if (recv.getCommand() == Command.disconnect)
+		else if (recv.getCommand() == Command.disconnect)
 			disconnect();
 		else if (recv.getCommand() == Command.login) {
 			TransportObject send = new TransportObject(Command.login, ServerReply.REJECTED);
@@ -286,7 +285,9 @@ public class User extends BaseUser {
 			server.joinGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.leave)
 			server.leaveGroup(this, recv.getGname());
-		else if (recv.getCommand() == Command.send)
+		else if (recv.getCommand() == Command.send) {
+			System.out.println("I got a message");
 			send(recv.getDest(), recv.getMessage());
+		}
 	}
 }

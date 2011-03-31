@@ -55,7 +55,8 @@ public class ChatClient extends Thread{
 			
 			connected = true;
 			output("connect OK");
-	        receiver.start();
+			if(!receiver.isAlive())
+				receiver.start();
 		} catch (Exception e) {
 			output("connect REJECTED");
 			e.printStackTrace();
@@ -149,13 +150,11 @@ public class ChatClient extends Thread{
 		TransportObject recObject = null;
 		try {
 			//System.out.println("going to wait for new object");
-			/*
 			Object o = received.readObject();
 			if(o!=null)
 				System.out.println(o);
 			recObject = (TransportObject) o;
-			*/
-			recObject = (TransportObject) received.readObject();
+			//recObject = (TransportObject) received.readObject();
 			//System.out.println("new recObject received");
 		} catch (Exception e) {
 			e.printStackTrace();

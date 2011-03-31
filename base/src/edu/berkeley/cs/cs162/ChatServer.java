@@ -46,6 +46,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private volatile boolean isDown;
 	private final static int MAX_USERS = 100;
 	private final static int MAX_WAITING_USERS = 10;
+	private final static long TIMEOUT = 5;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
 	private Map<String, SocketParams> waiting_sockets;
@@ -215,7 +216,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			task.add(new Handler(params));
 			ObjectOutputStream sent = params.getOutputStream();
 			pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
-			List<Future<Handler>> futures = pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+			List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 			if (futures.get(0).isCancelled()) {
 				
 				TransportObject sendObject = new TransportObject(ServerReply.timeout);
@@ -361,7 +362,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				Handler handler = new Handler(newSocket);
 				task.add(handler);
 				System.out.println("new socket request received");
-				List<Future<Handler>> futures = pool.invokeAll(task, (long) 5, TimeUnit.SECONDS);
+				List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
 					//ObjectInputStream received = new ObjectInputStream(newSocket.getInputStream());

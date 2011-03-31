@@ -196,6 +196,7 @@ public class User extends BaseUser {
 
 	public void logoff() {
 		loggedOff = true;
+		logoffAck();
 	}
 
 
@@ -214,7 +215,6 @@ public class User extends BaseUser {
 	}
 
 	public void logoffAck() {
-		server.logoff(username);
 		TransportObject logoutAck = new TransportObject(Command.logout, ServerReply.OK);
 		queueReply(logoutAck);
 	}

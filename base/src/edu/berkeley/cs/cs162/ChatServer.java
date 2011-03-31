@@ -246,6 +246,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			if(user.getUserGroups().contains(groupname)){
 				joinAck(user,groupname,ServerReply.ALREADY_MEMBER);
+				lock.writeLock().unlock();
 				return false;
 			}
 			user.addToGroups(groupname);
@@ -335,8 +336,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					TestChatServer.logChatServerDropMsg(message.toString(), new Date());
 					lock.readLock().unlock();
 					return sendError;
-				} else if(sendError==MsgSendError.MESSAGE_FAILED)
+				} else if(sendError==MsgSendError.MESSAGE_FAILED){
+					lock.readLock().unlock();
 					return sendError;
+				}
 				
 			} else {
 				TestChatServer.logChatServerDropMsg(message.toString(), new Date());

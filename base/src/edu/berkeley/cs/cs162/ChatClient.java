@@ -286,8 +286,9 @@ public class ChatClient extends Thread{
 			leave(gname);
 		}
 		else if (tokens[0].equals("send")) {
-			if(args != 4)
+			if(args < 4)
 				throw new Exception("invalid arguments for send command");
+			tokens = command.split(" ",4);
 			String dest = tokens[1];
 			int sqn;
 			try {

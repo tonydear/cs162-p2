@@ -207,8 +207,13 @@ public class ChatClient extends Thread{
 	}
 	
 	private void sleep(int time){
-		this.sleep(time);
-		output("sleep OK");
+		try {
+			output("sleep OK");
+			Thread.sleep(time);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public Map<String,ChatLog> getLogs(){

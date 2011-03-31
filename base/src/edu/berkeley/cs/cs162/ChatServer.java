@@ -215,7 +215,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		try {
 			task.add(new Handler(params));
 			ObjectOutputStream sent = params.getOutputStream();
-			pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
 			List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 			if (futures.get(0).isCancelled()) {
 				

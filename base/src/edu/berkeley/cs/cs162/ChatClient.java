@@ -67,7 +67,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void output(String o){
-		System.out.append(o);
+		System.out.println(o);
 	}
 	
 	private void login(String username){

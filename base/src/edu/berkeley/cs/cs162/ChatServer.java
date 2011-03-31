@@ -423,10 +423,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	public static void main(String[] args) throws Exception{
-		if (args.length != 2) {
+		if (args.length != 1) {
 			throw new Exception("Invalid number of args to command");
 		}
-		int port = Integer.parseInt(args[1]);
+		int port = Integer.parseInt(args[0]);
 		ChatServer chatServer = new ChatServer(port);
 	}
 }

@@ -398,6 +398,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 						recObject = (TransportObject) received.readObject();
 					} catch (Exception e) {
 						e.printStackTrace();
+						return null;
 					}
 					if (recObject != null) {
 						

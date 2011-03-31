@@ -202,8 +202,8 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
-		}else if (reply.equals(Command.send))
-			output(reply.toString() + " " + recObject.getSQN() + " " + servReply.toString());
+		}else if (type.equals(Command.send))
+			output(type.toString() + " " + recObject.getSQN() + " " + servReply.toString());
 		else{
 			System.out.println("What kind of server reply is this?");
 		}

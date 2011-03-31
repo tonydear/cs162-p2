@@ -152,13 +152,14 @@ public class User extends BaseUser {
 		TestChatServer.logUserSendMsg(username, formattedMsg);
 		sqn++;
 		toSend.add(msgJob);
+		System.out.println("toSend not empty"+msgJob);
 		sendLock.writeLock().unlock();
 	}
 
 	public boolean acceptMsg(Message msg) {
 		logRecvMsg(msg);
 		TestChatServer.logUserMsgRecvd(username, msg.toString(), new Date());
-		TransportObject toSend = new TransportObject(Command.send,msg.getDest(),msg.getSQN(),msg.getContent());
+		TransportObject toSend = new TransportObject(ServerReply.receive,msg.getSource(),msg.getDest(),msg.getContent());
 		if(!queueReply(toSend))
 			return false;
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());
@@ -239,7 +240,9 @@ public class User extends BaseUser {
 			sendLock.writeLock().lock();
 			if (!toSend.isEmpty()) {
 				MessageJob msgJob = toSend.poll();
+				System.out.println("about to processMessage on server");
 				MsgSendError msgStatus = server.processMessage(username, msgJob.dest, msgJob.msg, msgJob.sqn, msgJob.timestamp);
+				System.out.println("sending clientAck for message");
 				sendClientAck(msgStatus,msgJob);
 			}
 			sendLock.writeLock().unlock();
@@ -287,7 +290,7 @@ public class User extends BaseUser {
 			server.leaveGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.send) {
 			System.out.println("I got a message");
-			send(recv.getDest(), recv.getMessage());
+			send(recv.getDest(), recv.getMessage(), recv.getSQN());
 		}
 	}
 }

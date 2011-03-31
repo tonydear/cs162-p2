@@ -268,7 +268,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(success)
 				joinAck(user,groupname,ServerReply.OK_CREATE);
 			else
-				joinAck(user,groupname,ServerReply.FAIL_FULL);
+				System.out.println("why can't i create?");
 			lock.writeLock().unlock();
 			return success;
 		}

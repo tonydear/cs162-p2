@@ -209,7 +209,7 @@ public class ChatClient extends Thread{
 			output(servReply.toString());
 			connected = false;
 		}else {
-			System.out.println("What kind of server reply is this? " + reply);
+			System.out.println("What kind of server reply is this? " + servReply);
 		}
 	}
 	

@@ -246,6 +246,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			if(user.getUserGroups().contains(groupname)){
 				joinAck(user,groupname,ServerReply.ALREADY_MEMBER);
+				lock.writeLock().unlock();
 				return false;
 			}
 			user.addToGroups(groupname);

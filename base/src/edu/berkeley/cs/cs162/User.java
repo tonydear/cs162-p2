@@ -58,7 +58,7 @@ public class User extends BaseUser {
 				while(!loggedOff) {
 					TransportObject reply = null;
 					try {
-						reply = queuedServerReplies.poll();
+						reply = queuedServerReplies.take();
 						sent.writeObject(reply);
 					} catch (Exception e) {
 						if(reply.getCommand().equals(Command.send)) {

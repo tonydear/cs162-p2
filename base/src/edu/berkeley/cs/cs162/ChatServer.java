@@ -1,6 +1,7 @@
 package edu.berkeley.cs.cs162;
 
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -356,7 +357,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				Handler handler = new Handler(newSocket);
 				task.add(handler);
 				System.out.println("new socket request received");
-				List<Future<Handler>> futures = pool.invokeAll(task, (long) 20, TimeUnit.SECONDS);
+				List<Future<Handler>> futures = pool.invokeAll(task, (long) 5, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
 					//ObjectInputStream received = new ObjectInputStream(newSocket.getInputStream());
@@ -396,6 +397,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			    	System.out.println("polling for login command");
 					try {
 						recObject = (TransportObject) received.readObject();
+					} catch (EOFException e) {
+						System.out.println("user disconnected");
+						return null;
 					} catch (Exception e) {
 						e.printStackTrace();
 						return null;

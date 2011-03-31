@@ -8,6 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +58,8 @@ public class ChatClient extends Thread{
 			output("connect OK");
 			if(!receiver.isAlive())
 				receiver.start();
+		} catch (IllegalThreadStateException e) {
+
 		} catch (Exception e) {
 			output("connect REJECTED");
 			e.printStackTrace();
@@ -156,6 +159,10 @@ public class ChatClient extends Thread{
 			recObject = (TransportObject) o;
 			//recObject = (TransportObject) received.readObject();
 			//System.out.println("new recObject received");
+		} catch (SocketException e) {
+			System.out.println("user disconnected");
+			connected = false;
+			return;
 		} catch (Exception e) {
 			e.printStackTrace();
 			connected = false;

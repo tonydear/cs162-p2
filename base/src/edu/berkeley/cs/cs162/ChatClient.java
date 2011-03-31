@@ -187,8 +187,6 @@ public class ChatClient extends Thread{
 			}
 			else if (reply.equals(Command.join) || reply.equals(Command.leave))
 				output(type.toString() + " " + recObject.getGname() + " " + servReply.toString());
-			else if (reply.equals(Command.send))
-				output(reply.toString() + " " + recObject.getSQN() + " " + servReply.toString());
 			else
 				return;
 			
@@ -203,6 +201,10 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
+		}else if (reply.equals(Command.send))
+			output(reply.toString() + " " + recObject.getSQN() + " " + servReply.toString());
+		else{
+			System.out.println("What kind of server reply is this?");
 		}
 	}
 	

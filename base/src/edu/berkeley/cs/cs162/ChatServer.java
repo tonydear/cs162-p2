@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -46,7 +47,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private volatile boolean isDown;
 	private final static int MAX_USERS = 100;
 	private final static int MAX_WAITING_USERS = 10;
-	private final static long TIMEOUT = 5;
+	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
 	private Map<String, SocketParams> waiting_sockets;
@@ -221,6 +222,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				TransportObject sendObject = new TransportObject(ServerReply.timeout);
 				sent.writeObject(sendObject);
 			}
+		} catch (SocketException e) {
+			
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

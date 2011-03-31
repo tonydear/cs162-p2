@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -60,6 +61,8 @@ public class User extends BaseUser {
 					try {
 						reply = queuedServerReplies.take();
 						sent.writeObject(reply);
+					} catch (SocketException e) {
+						
 					} catch (Exception e) {
 						if(reply.getCommand().equals(Command.send)) {
 							User sender = (User) server.getUser(reply.getSender());

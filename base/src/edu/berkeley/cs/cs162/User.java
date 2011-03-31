@@ -33,6 +33,7 @@ public class User extends BaseUser {
 	private volatile boolean loggedOff;
 	private final static int MAX_SEND = 10000;
 	private BlockingQueue<TransportObject> queuedServerReplies;
+	private boolean pendingLogoff;
 
 	public User(ChatServer server, String username) {
 		this.server = server;
@@ -41,11 +42,16 @@ public class User extends BaseUser {
 		chatlogs = new HashMap<String, ChatLog>();
 		toSend = new LinkedList<MessageJob>();
 		sendLock = new ReentrantReadWriteLock(true);
+		pendingLogoff = false;
 		queuedServerReplies = new ArrayBlockingQueue<TransportObject>(MAX_SEND);
 	}
 
 	public boolean queueReply(TransportObject reply) {
-		return queuedServerReplies.add(reply);
+		if (!pendingLogoff) {
+			return queuedServerReplies.add(reply);
+		} else {
+			return false;
+		}
 	}
 
 	public boolean setSocket(Socket socket, ObjectInputStream receivedParam, ObjectOutputStream sentParam){ 
@@ -74,7 +80,9 @@ public class User extends BaseUser {
 						e.printStackTrace();
 					}
 				}
+				System.out.println("sender thread of user ending now");
 			}
+			
 		};
 		receiver = new Thread(){
 			@Override
@@ -82,6 +90,7 @@ public class User extends BaseUser {
 				while(!loggedOff){
 					processCommand();
 				}
+				System.out.println("receiver thread of user ending now");
 			}
 		};
 		receiver.start();
@@ -199,8 +208,28 @@ public class User extends BaseUser {
 	}
 
 	public void logoff() {
-		loggedOff = true;
+		pendingLogoff = true;
 		logoffAck();
+		while (!queuedServerReplies.isEmpty()) {
+			TransportObject reply = null;
+			try {
+				reply = queuedServerReplies.take();
+				sent.writeObject(reply);
+			} catch (SocketException e) {
+				
+			} catch (Exception e) {
+				if(reply.getCommand().equals(Command.send)) {
+					User sender = (User) server.getUser(reply.getSender());
+					if(sender!=null){
+						TransportObject error = new TransportObject(ServerReply.sendack,reply.getSQN());
+						sender.queueReply(error);
+					}
+				}
+				e.printStackTrace();
+			}
+		}
+		loggedOff = true;
+		
 	}
 
 
@@ -270,6 +299,7 @@ public class User extends BaseUser {
 			recv = (TransportObject) received.readObject();
 		} catch (Exception e) {
 			disconnect();
+			System.out.println("connection closed asynchronously");
 		}
 		if (recv == null)
 			disconnect();

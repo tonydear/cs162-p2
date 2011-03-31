@@ -69,7 +69,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<String>(MAX_WAITING_USERS);
 		isDown = false;
-		pool = Executors.newFixedThreadPool(100);
+		pool = Executors.newFixedThreadPool(1000);
 		try {
 			mySocket = new ServerSocket(port);
 		} catch (Exception e) {

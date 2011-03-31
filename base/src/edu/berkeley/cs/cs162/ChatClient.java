@@ -8,6 +8,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,17 +33,7 @@ public class ChatClient extends Thread{
 		connected = false;
 		isWaiting = false;
 		reply = null;
-		
-		receiver = new Thread(){
-            @Override
-            public void run(){
-            	System.out.println("receiver running connected is " + connected);
-            	while(connected){
-            		//System.out.println("receiver receiving new response from server");
-            		receive();
-            	}
-            }
-        };
+		receiver = null;
         start();
 	}
 	
@@ -55,7 +46,21 @@ public class ChatClient extends Thread{
 			
 			connected = true;
 			output("connect OK");
-	        receiver.start();
+			if(receiver == null || !receiver.isAlive()) {
+				receiver = new Thread(){
+		            @Override
+		            public void run(){
+		            	System.out.println("receiver running connected is " + connected);
+		            	while(connected){
+		            		//System.out.println("receiver receiving new response from server");
+		            		receive();
+		            	}
+		            }
+		        };
+				receiver.start();
+			}
+		} catch (IllegalThreadStateException e) {
+			e.printStackTrace();
 		} catch (Exception e) {
 			output("connect REJECTED");
 			e.printStackTrace();
@@ -149,14 +154,16 @@ public class ChatClient extends Thread{
 		TransportObject recObject = null;
 		try {
 			//System.out.println("going to wait for new object");
-			/*
 			Object o = received.readObject();
 			if(o!=null)
 				System.out.println(o);
 			recObject = (TransportObject) o;
-			*/
-			recObject = (TransportObject) received.readObject();
+			//recObject = (TransportObject) received.readObject();
 			//System.out.println("new recObject received");
+		} catch (SocketException e) {
+			System.out.println("user disconnected");
+			connected = false;
+			return;
 		} catch (Exception e) {
 			e.printStackTrace();
 			connected = false;
@@ -181,8 +188,6 @@ public class ChatClient extends Thread{
 			}
 			else if (reply.equals(Command.join) || reply.equals(Command.leave))
 				output(type.toString() + " " + recObject.getGname() + " " + servReply.toString());
-			else if (reply.equals(Command.send))
-				output(reply.toString() + " " + recObject.getSQN() + " " + servReply.toString());
 			else
 				return;
 			
@@ -197,12 +202,21 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
+		}else if (reply.equals(Command.send))
+			output(reply.toString() + " " + recObject.getSQN() + " " + servReply.toString());
+		else{
+			System.out.println("What kind of server reply is this?");
 		}
 	}
 	
 	private void sleep(int time){
-		this.sleep(time);
-		output("sleep OK");
+		try {
+			output("sleep OK");
+			Thread.sleep(time);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public Map<String,ChatLog> getLogs(){

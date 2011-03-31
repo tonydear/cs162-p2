@@ -10,6 +10,7 @@ public enum ServerReply {
 	BAD_GROUP,
 	FAIL_FULL,
 	NOT_MEMBER,
+	ALREADY_MEMBER,
 	BAD_DEST,
 	FAIL,
 	sendack,

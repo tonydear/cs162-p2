@@ -204,7 +204,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			TransportObject reply = new TransportObject(Command.login, ServerReply.OK);
 			newUser.queueReply(reply);
 			newUser.connected();
-			TestChatServer.logUserLogin(username, new Date());
+			TestChatServer.logUserLogin(newUsername, new Date());
 		}
 		
 		lock.writeLock().unlock();	
@@ -259,11 +259,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				lock.writeLock().unlock();
 				return false;
 			}
-			user.addToGroups(groupname);
-			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
-			if(success)
+			
+			
+			if(success){
+				user.addToGroups(groupname);
 				joinAck(user,groupname,ServerReply.OK_JOIN);
-			else
+				TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
+			}else
 				joinAck(user,groupname,ServerReply.FAIL_FULL);
 			lock.writeLock().unlock();
 			return success;

@@ -70,7 +70,7 @@ public class User extends BaseUser {
 						if(reply != null)
 							sent.writeObject(reply);
 					} catch (SocketException e) {
-						
+						System.err.println(e);
 					} catch (Exception e) {
 						if(reply.getCommand().equals(Command.send)) {
 							User sender = (User) server.getUser(reply.getSender());
@@ -79,7 +79,6 @@ public class User extends BaseUser {
 								sender.queueReply(error);
 							}
 						}
-						e.printStackTrace();
 					}
 				}
 				System.out.println("sender thread of user ending now");
@@ -220,12 +219,13 @@ public class User extends BaseUser {
 		while (!queuedServerReplies.isEmpty()) {
 			TransportObject reply = null;
 			try {
-				reply = queuedServerReplies.take();
-				sent.writeObject(reply);
+				reply = queuedServerReplies.poll();
+				if(reply!=null)
+					sent.writeObject(reply);
 			} catch (SocketException e) {
-				
+				System.err.println(e);
 			} catch (Exception e) {
-				if(reply.getCommand().equals(Command.send)) {
+				if(reply!=null&&reply.getCommand().equals(Command.send)) {
 					User sender = (User) server.getUser(reply.getSender());
 					if(sender!=null){
 						TransportObject error = new TransportObject(ServerReply.sendack,reply.getSQN());

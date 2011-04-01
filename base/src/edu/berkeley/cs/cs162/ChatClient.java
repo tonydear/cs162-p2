@@ -183,10 +183,13 @@ public class ChatClient extends Thread{
 			return;
 		} catch (EOFException e) {
 			System.out.println("server connection lost");
+			connected = false;
+			return;
 		}
 		catch (Exception e) {
 			e.printStackTrace();
 			connected = false;
+			return;
 		}
 		
 		if (recObject == null){

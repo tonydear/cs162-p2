@@ -7,7 +7,7 @@ import java.util.Iterator;
 public class ChatGroup {
 	private String name;
 	private HashMap<String, User> userlist;
-	private final static int MAX_USERS = 2;
+	private final static int MAX_USERS = 10;
 	
 	ChatGroup(String initname) {
 		name = initname;

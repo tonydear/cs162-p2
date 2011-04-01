@@ -179,7 +179,7 @@ public class ChatClient extends Thread{
 			connected = false;
 			return;
 		} catch (EOFException e) {
-			System.out.prinln("server connection lost");
+			System.out.println("server connection lost");
 		}
 		catch (Exception e) {
 			e.printStackTrace();

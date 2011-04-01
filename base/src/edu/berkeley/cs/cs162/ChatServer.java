@@ -43,7 +43,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private Set<String> allNames;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
-	private final static int MAX_USERS = 5;
+	private final static int MAX_USERS = 1;
 	private final static int MAX_WAITING_USERS = 10;
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
@@ -143,9 +143,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
 			newUser = new User(this, username);
 			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
+				System.out.println("added to wait queue");
 				allNames.add(username);
 				SocketParams socket = waiting_sockets.get(username);
 				newUser.setSocket(socket.getMySocket(), socket.getInputStream(), socket.getOutputStream());
+				System.out.println("finished setting socket");
 				lock.writeLock().unlock();
 				return LoginError.USER_QUEUED;
 			}
@@ -432,6 +434,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					} catch (EOFException e) {
 						System.out.println("user connection dropped");
 						return null;
+					} catch (SocketException e) {
+						System.out.println("user socket exception");
+						return null;
 					} catch (Exception e) {
 						e.printStackTrace();
 						return null;
@@ -443,6 +448,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 						if (type == Command.login) {
 							String username = recObject.getUsername();
 							LoginError loginError = login(username);
+							System.out.println("attempted login");
 							TransportObject sendObject;
 							if (loginError == LoginError.USER_ACCEPTED) {
 								sendObject = new TransportObject(Command.login, ServerReply.OK);
@@ -452,6 +458,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 								newUser.setSocket(socket, received, sent);
 								System.out.println("just set socket on new user");
 							} else if (loginError == LoginError.USER_QUEUED) {
+								System.out.println("user queued");
 								sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
 								SocketParams params = new SocketParams(socket, received, sent);
 								waiting_sockets.put(username, params);

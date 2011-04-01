@@ -93,8 +93,11 @@ public class User extends BaseUser {
 				System.out.println("receiver thread of user ending now");
 			}
 		};
+		System.out.println("about to start sender/receiver threads");
 		receiver.start();
+		System.out.println("receiver thread started");
 		sender.start();
+		System.out.println("sender thread started");
 		return true;
 
 	}

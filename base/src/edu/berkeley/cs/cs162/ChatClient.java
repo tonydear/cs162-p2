@@ -223,11 +223,7 @@ public class ChatClient extends Thread{
 				output(type.toString() + " " + recObject.getGname() + " " + servReply.toString());
 			else if (reply.equals(Command.send))
 				output(type.toString() + " " + recObject.getSQN() + " " + servReply.toString());
-			else if (reply.equals(Command.login) && isQueued){
-				output("login OK");
-				isQueued = false;
-				isLoggedIn = true;
-			}else
+			else
 				return;
 			
 			isWaiting = false;
@@ -242,7 +238,11 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
-		}else {
+		}else if (type.equals(Command.login) && isQueued){
+			output("login OK");
+			isQueued = false;
+			isLoggedIn = true;
+		} else {
 			System.out.println("What kind of server reply is this? " + servReply);
 		}
 	}

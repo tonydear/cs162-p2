@@ -384,6 +384,27 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				Handler handler = new Handler(newSocket);
 				task.add(handler);
 				System.out.println("new socket request received");
+				Thread t = new FirstThread(task, handler);
+				t.start();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	class FirstThread extends Thread {
+		private List<Handler> task;
+		private Handler handler;
+		
+		public FirstThread(List<Handler> task, Handler handler) {
+			this.task = task;
+			this.handler = handler;
+		}
+		
+		public void run() {
+			try {
 				List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
@@ -394,16 +415,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					handler.socket.close();
 					System.out.println("client timing out");
 				}
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
+			} catch (Exception e){
 				e.printStackTrace();
 			}
+				
 		}
+		
 	}
-
 	
 	class Handler implements Callable<ChatServer.Handler>, Runnable {
 		private final Socket socket;

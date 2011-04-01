@@ -293,6 +293,7 @@ public class User extends BaseUser {
 		}
 		groupsJoined.clear();
 		TestChatServer.logUserLogout(username, new Date());
+		System.out.println("User thread died");
 	}
 
 	public void processCommand() {

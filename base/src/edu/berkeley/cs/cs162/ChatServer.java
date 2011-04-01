@@ -9,12 +9,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,13 +37,13 @@ import java.util.concurrent.TimeUnit;
 
 public class ChatServer extends Thread implements ChatServerInterface {
 
-	private BlockingQueue<String> waiting_users;
+	private BlockingQueue<User> waiting_users;
 	private Map<String, User> users;
 	private Map<String, ChatGroup> groups;
 	private Set<String> allNames;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
-	private final static int MAX_USERS = 100;
+	private final static int MAX_USERS = 5;
 	private final static int MAX_WAITING_USERS = 10;
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
@@ -57,7 +55,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		groups = new HashMap<String, ChatGroup>();
 		allNames = new HashSet<String>();
 		lock = new ReentrantReadWriteLock(true);
-		waiting_users = new ArrayBlockingQueue<String>(MAX_WAITING_USERS);
+		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
 		
 	}
@@ -67,7 +65,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		groups = new HashMap<String, ChatGroup>();
 		allNames = new HashSet<String>();
 		lock = new ReentrantReadWriteLock(true);
-		waiting_users = new ArrayBlockingQueue<String>(MAX_WAITING_USERS);
+		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
 		pool = Executors.newFixedThreadPool(1000);
 		try {
@@ -131,6 +129,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	@Override
 	public LoginError login(String username) {
 		lock.writeLock().lock();
+		User newUser;
 		if(isDown){
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			lock.writeLock().unlock();
@@ -142,15 +141,21 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			return LoginError.USER_REJECTED;
 		}
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
-			lock.writeLock().unlock();
-			if(waiting_users.offer(username))	//attempt to add to waiting queue
+			newUser = new User(this, username);
+			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
+				allNames.add(username);
+				SocketParams socket = waiting_sockets.get(username);
+				newUser.setSocket(socket.getMySocket(), socket.getInputStream(), socket.getOutputStream());
+				lock.writeLock().unlock();
 				return LoginError.USER_QUEUED;
+			}
 			else {								//else drop user
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
+				lock.writeLock().unlock();
 				return LoginError.USER_DROPPED;				
 			}
 		}
-		User newUser = new User(this, username);
+		newUser = new User(this, username);
 		users.put(username, newUser);
 		allNames.add(username);
 		newUser.connected();
@@ -164,6 +169,19 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		// TODO Auto-generated method stub
 		lock.writeLock().lock();
 		if(!users.containsKey(username)){
+			User toRemove = null;
+			for(User u : waiting_users) {
+				if(u.getUsername().equals(username)) {
+					u.logoff();
+					toRemove = u;
+				}
+			}
+			if(toRemove != null) {
+				waiting_users.remove(toRemove);
+				allNames.remove(toRemove.getUsername());
+				lock.writeLock().unlock();
+				return true;
+			}
 			lock.writeLock().unlock();
 			return false;
 		}
@@ -183,18 +201,15 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		users.remove(username);
 		
 		// Check for waiting users
-		String uname = waiting_users.poll();
-		if(uname != null) {							//add to ChatServer
-			User newUser = new User(this, uname);
-			SocketParams socket = waiting_sockets.get(uname);
-			newUser.setSocket(socket.getMySocket(), socket.getInputStream(), socket.getOutputStream());
-			waiting_sockets.remove(uname);
-			users.put(uname, newUser);
-			allNames.add(uname);
+		User newUser = waiting_users.poll();
+		if(newUser != null) {							//add to ChatServer
+			String newUsername = newUser.getUsername();
+			waiting_sockets.remove(newUsername);
+			users.put(newUsername, newUser);
 			TransportObject reply = new TransportObject(Command.login, ServerReply.OK);
 			newUser.queueReply(reply);
 			newUser.connected();
-			TestChatServer.logUserLogin(uname, new Date());
+			TestChatServer.logUserLogin(username, new Date());
 		}
 		
 		lock.writeLock().unlock();	
@@ -415,7 +430,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					try {
 						recObject = (TransportObject) received.readObject();
 					} catch (EOFException e) {
-						System.out.println("user disconnected");
+						System.out.println("user connection dropped");
 						return null;
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -438,7 +453,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 								System.out.println("just set socket on new user");
 							} else if (loginError == LoginError.USER_QUEUED) {
 								sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
-								waiting_sockets.put(username, new SocketParams(socket, received, sent));
+								SocketParams params = new SocketParams(socket, received, sent);
+								waiting_sockets.put(username, params);
 							} else if (loginError == LoginError.USER_REJECTED){
 								sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
 								
@@ -463,11 +479,21 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			}
 	}
 	
+	//removes username from waiting queues
+	public void removeFromQueue(String username) {
+		lock.writeLock().lock();
+		allNames.remove(username);
+		waiting_users.remove(username);
+		waiting_sockets.remove(username);
+		lock.writeLock().unlock();
+	}
+	
 	public static void main(String[] args) throws Exception{
 		if (args.length != 1) {
 			throw new Exception("Invalid number of args to command");
 		}
 		int port = Integer.parseInt(args[0]);
+		@SuppressWarnings("unused")
 		ChatServer chatServer = new ChatServer(port);
 	}
 }

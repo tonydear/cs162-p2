@@ -42,8 +42,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private Set<String> allNames;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
-	private final static int MAX_USERS = 3;
-	private final static int MAX_WAITING_USERS = 1;
+	private final static int MAX_USERS = 100;
+	private final static int MAX_WAITING_USERS = 10;
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
@@ -133,14 +133,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			return LoginError.USER_REJECTED;
 		}
 		if (allNames.contains(username)) {
-			lock.writeLock().unlock();
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
+			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
 			newUser = new User(this, username);
 			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
-				System.out.println("added to wait queue");
 				allNames.add(username);
 				lock.writeLock().unlock();
 				return LoginError.USER_QUEUED;
@@ -155,8 +154,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		users.put(username, newUser);
 		allNames.add(username);
 		newUser.connected();
-		lock.writeLock().unlock();
 		TestChatServer.logUserLogin(username, new Date());
+		lock.writeLock().unlock();
 		return LoginError.USER_ACCEPTED;
 	}
 
@@ -284,7 +283,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(success)
 				joinAck(user,groupname,ServerReply.OK_CREATE);
 			else
-				System.out.println("why can't i create?");
+				System.err.println("why can't i create?");
 			lock.writeLock().unlock();
 			return success;
 		}
@@ -378,7 +377,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				newSocket = mySocket.accept();
 				Handler handler = new Handler(newSocket);
 				task.add(handler);
-				System.out.println("new socket request received");
 				Thread t = new FirstThread(task, handler);
 				t.start();
 				
@@ -408,7 +406,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					TransportObject sendObject = new TransportObject(ServerReply.timeout);
 					sent.writeObject(sendObject);
 					handler.socket.close();
-					System.out.println("client timing out");
 				}
 			} catch (Exception e){
 				e.printStackTrace();
@@ -438,17 +435,15 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		    }
 			@Override
 			public Handler call() throws Exception {
-				System.out.println("starting run method of new handler");
 		    	TransportObject recObject = null;
 		    	while(recObject == null) {
-			    	System.out.println("polling for login command");
 					try {
 						recObject = (TransportObject) received.readObject();
 					} catch (EOFException e) {
-						System.out.println("user connection dropped");
+						System.err.println("user connection dropped/finished");
 						return null;
 					} catch (SocketException e) {
-						System.out.println("user socket exception");
+						System.err.println("user socket exception");
 						return null;
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -457,21 +452,15 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					if (recObject != null) {
 						
 						Command type = recObject.getCommand();
-						System.out.println("received first command " + type.toString());
 						if (type == Command.login) {
 							String username = recObject.getUsername();
 							LoginError loginError = login(username);
-							System.out.println("attempted login");
 							TransportObject sendObject;
 							if (loginError == LoginError.USER_ACCEPTED) {
 								sendObject = new TransportObject(Command.login, ServerReply.OK);
-								System.out.println("created new transport object");
 								User newUser = (User) getUser(username);
-								System.out.println("got new user");
 								newUser.setSocket(socket, received, sent);
-								System.out.println("just set socket on new user");
 							} else if (loginError == LoginError.USER_QUEUED) {
-								System.out.println("user queued");
 								sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
 								User newUser = null;
 								for(User u : waiting_users) {
@@ -489,7 +478,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 								recObject = null;
 							}
 							try {
-								System.out.println("sending new object woot " + sendObject);
 								sent.writeObject(sendObject);
 							} catch (IOException e) {
 								// TODO Auto-generated catch block

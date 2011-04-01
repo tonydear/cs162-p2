@@ -81,9 +81,12 @@ public class ChatClient extends Thread{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		if(isLoggedIn)
+			output("logout OK");
 		output("disconnect OK");
 		isLoggedIn = false;
 		isQueued = false;
+		connected = false;
 	}
 	
 	private void output(String o){

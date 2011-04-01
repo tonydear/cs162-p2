@@ -65,8 +65,9 @@ public class User extends BaseUser {
 				while(!pendingLogoff) {
 					TransportObject reply = null;
 					try {
-						reply = queuedServerReplies.take();
-						sent.writeObject(reply);
+						reply = queuedServerReplies.poll();
+						if(reply != null)
+							sent.writeObject(reply);
 					} catch (SocketException e) {
 						
 					} catch (Exception e) {

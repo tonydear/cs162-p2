@@ -20,7 +20,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -43,12 +42,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private Set<String> allNames;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
-	private final static int MAX_USERS = 1;
+	private final static int MAX_USERS = 100;
 	private final static int MAX_WAITING_USERS = 10;
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
-	private Map<String, SocketParams> waiting_sockets;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -73,7 +71,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
-		waiting_sockets = new ConcurrentHashMap<String, SocketParams>();
 		this.start();
 	}
 	
@@ -145,9 +142,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
 				System.out.println("added to wait queue");
 				allNames.add(username);
-				SocketParams socket = waiting_sockets.get(username);
-				newUser.setSocket(socket.getMySocket(), socket.getInputStream(), socket.getOutputStream());
-				System.out.println("finished setting socket");
 				lock.writeLock().unlock();
 				return LoginError.USER_QUEUED;
 			}
@@ -206,7 +200,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		User newUser = waiting_users.poll();
 		if(newUser != null) {							//add to ChatServer
 			String newUsername = newUser.getUsername();
-			waiting_sockets.remove(newUsername);
 			users.put(newUsername, newUser);
 			TransportObject reply = new TransportObject(Command.login, ServerReply.OK);
 			newUser.queueReply(reply);
@@ -460,8 +453,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 							} else if (loginError == LoginError.USER_QUEUED) {
 								System.out.println("user queued");
 								sendObject = new TransportObject(Command.login, ServerReply.QUEUED);
-								SocketParams params = new SocketParams(socket, received, sent);
-								waiting_sockets.put(username, params);
+								User newUser = null;
+								for(User u : waiting_users) {
+									if(u.getUsername().equals(username))
+										newUser = u;
+								}
+								if(newUser != null)
+									newUser.setSocket(socket, received, sent);
 							} else if (loginError == LoginError.USER_REJECTED){
 								sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
 								
@@ -484,15 +482,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		    	return null;
 			
 			}
-	}
-	
-	//removes username from waiting queues
-	public void removeFromQueue(String username) {
-		lock.writeLock().lock();
-		allNames.remove(username);
-		waiting_users.remove(username);
-		waiting_sockets.remove(username);
-		lock.writeLock().unlock();
 	}
 	
 	public static void main(String[] args) throws Exception{

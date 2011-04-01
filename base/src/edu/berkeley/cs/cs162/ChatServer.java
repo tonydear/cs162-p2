@@ -133,8 +133,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			return LoginError.USER_REJECTED;
 		}
 		if (allNames.contains(username)) {
-			lock.writeLock().unlock();
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
+			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
@@ -154,8 +154,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		users.put(username, newUser);
 		allNames.add(username);
 		newUser.connected();
-		lock.writeLock().unlock();
 		TestChatServer.logUserLogin(username, new Date());
+		lock.writeLock().unlock();
 		return LoginError.USER_ACCEPTED;
 	}
 

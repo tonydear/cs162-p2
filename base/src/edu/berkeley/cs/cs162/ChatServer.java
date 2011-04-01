@@ -42,8 +42,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private Set<String> allNames;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
-	private final static int MAX_USERS = 100;
-	private final static int MAX_WAITING_USERS = 10;
+	private final static int MAX_USERS = 3;
+	private final static int MAX_WAITING_USERS = 1;
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;

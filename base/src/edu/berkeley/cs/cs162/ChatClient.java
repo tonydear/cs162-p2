@@ -24,6 +24,7 @@ public class ChatClient extends Thread{
 	private volatile boolean connected;
 	private Command reply; 				//what reply from server should look like
 	private volatile boolean isWaiting; //waiting for reply from server?
+	private volatile boolean isLoggedIn, isQueued;
 	
 	public ChatClient(){
 		mySocket = null;
@@ -80,6 +81,8 @@ public class ChatClient extends Thread{
 			e.printStackTrace();
 		}
 		output("disconnect OK");
+		isLoggedIn = false;
+		isQueued = false;
 	}
 	
 	private void output(String o){
@@ -87,7 +90,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void login(String username){
-		if (!connected)
+		if (!connected && (!isLoggedIn || !isQueued))
 			return;
 		TransportObject toSend = new TransportObject(Command.login, username);
 		try {
@@ -102,7 +105,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void logout(){
-		if (!connected)
+		if (!connected || (!isLoggedIn && !isQueued))
 			return;
 		TransportObject toSend = new TransportObject(Command.logout);
 		try {
@@ -117,7 +120,7 @@ public class ChatClient extends Thread{
 	}
 
 	private void join(String gname){
-		if(!connected)
+		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.join,gname);
 		try {
@@ -132,7 +135,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void leave(String gname){
-		if(!connected)
+		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.leave,gname);
 		try {
@@ -147,6 +150,8 @@ public class ChatClient extends Thread{
 	}
 	
 	private void send(String dest, int sqn, String msg){
+		if(!connected || !isLoggedIn)
+			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
 		try {
 			isWaiting = true;
@@ -179,7 +184,6 @@ public class ChatClient extends Thread{
 		
 		if (recObject == null){
 			//connected = false;
-			
 			return;
 		}
 		Command type = recObject.getCommand();
@@ -191,14 +195,32 @@ public class ChatClient extends Thread{
 			System.out.println("Got to this line");
 			if (reply.equals(Command.disconnect) || reply.equals(Command.login) || reply.equals(Command.logout)) {
 				output(type.toString() + " " + servReply.toString());
-				if (reply.equals(Command.disconnect))
+				if (reply.equals(Command.disconnect)){
 					connected = false;
+					isLoggedIn = false;
+					isQueued = false;
+				}
+				else if (reply.equals(Command.login)){
+					if(recObject.getServerReply().equals(ServerReply.OK)){
+						isQueued = false;
+						isLoggedIn = true;
+					}else if(recObject.getServerReply().equals(ServerReply.QUEUED)){
+						isQueued = true;
+					}
+				}else if (reply.equals(Command.logout)){
+					isLoggedIn = false;
+					isQueued = false;
+				}
 			}
 			else if (reply.equals(Command.join) || reply.equals(Command.leave))
 				output(type.toString() + " " + recObject.getGname() + " " + servReply.toString());
 			else if (reply.equals(Command.send))
 				output(type.toString() + " " + recObject.getSQN() + " " + servReply.toString());
-			else	
+			else if (reply.equals(Command.login) && isQueued){
+				output("login OK");
+				isQueued = false;
+				isLoggedIn = true;
+			}else
 				return;
 			
 			isWaiting = false;

@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -56,9 +55,7 @@ public class ChatClient extends Thread{
 				receiver = new Thread(){
 		            @Override
 		            public void run(){
-		            	System.out.println("receiver running connected is " + connected);
 		            	while(connected){
-		            		//System.out.println("receiver receiving new response from server");
 		            		receive();
 		            	}
 		            }
@@ -114,7 +111,6 @@ public class ChatClient extends Thread{
 		TransportObject toSend = new TransportObject(Command.logout);
 		try {
 			sent.writeObject(toSend);
-			System.out.println("just sent logout object");
 			isWaiting = true;
 			reply = Command.logout;
 			this.wait();
@@ -170,19 +166,14 @@ public class ChatClient extends Thread{
 	private void receive(){
 		TransportObject recObject = null;
 		try {
-			//System.out.println("going to wait for new object");
 			Object o = received.readObject();
 			if(o!=null)
 				System.out.println(o);
 			recObject = (TransportObject) o;
-			//recObject = (TransportObject) received.readObject();
-			//System.out.println("new recObject received");
 		} catch (SocketException e) {
-			System.out.println("user disconnected");
 			connected = false;
 			return;
 		} catch (EOFException e) {
-			System.out.println("server connection lost");
 			connected = false;
 			return;
 		}
@@ -193,16 +184,13 @@ public class ChatClient extends Thread{
 		}
 		
 		if (recObject == null){
-			//connected = false;
 			return;
 		}
 		Command type = recObject.getCommand();
 		ServerReply servReply = recObject.getServerReply();
-		System.out.println("isWaiting " + isWaiting + " command type " + type);
 		if (servReply.equals(ServerReply.error)) {
 			System.err.println("Error");
 		} else if (isWaiting && type.equals(reply)) {
-			System.out.println("Got to this line");
 			if (reply.equals(Command.disconnect) || reply.equals(Command.login) || reply.equals(Command.logout)) {
 				output(type.toString() + " " + servReply.toString());
 				if (reply.equals(Command.disconnect)){
@@ -255,7 +243,6 @@ public class ChatClient extends Thread{
 			output("sleep OK");
 			Thread.sleep(time);
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -308,7 +295,6 @@ public class ChatClient extends Thread{
 		else if (tokens[0].equals("logout")) {
 			if(args != 1)
 				throw new Exception("invalid arguments for logout command");
-			System.out.println("received logout command from terminal");
 			logout();
 		}
 		else if (tokens[0].equals("join")) {
@@ -367,7 +353,7 @@ public class ChatClient extends Thread{
 	}
 	
 	public static void main(String[] args) throws UnknownHostException{
-		ChatClient client = new ChatClient();
+		new ChatClient();
 		
 	}
 }

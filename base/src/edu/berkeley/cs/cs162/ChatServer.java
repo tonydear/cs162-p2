@@ -42,8 +42,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private Set<String> allNames;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
-	private final static int MAX_USERS = 100;
-	private final static int MAX_WAITING_USERS = 10;
+	private final static int MAX_USERS = 3;
+	private final static int MAX_WAITING_USERS = 1;
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
@@ -480,7 +480,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 								}
 								if(newUser != null)
 									newUser.setSocket(socket, received, sent);
-							} else if (loginError == LoginError.USER_REJECTED){
+							} else if (loginError == LoginError.USER_DROPPED || loginError == LoginError.USER_REJECTED){
 								sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
 								
 								recObject = null;

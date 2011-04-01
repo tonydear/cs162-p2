@@ -1,6 +1,7 @@
 package edu.berkeley.cs.cs162;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -177,7 +178,10 @@ public class ChatClient extends Thread{
 			System.out.println("user disconnected");
 			connected = false;
 			return;
-		} catch (Exception e) {
+		} catch (EOFException e) {
+			System.out.prinln("server connection lost");
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 			connected = false;
 		}

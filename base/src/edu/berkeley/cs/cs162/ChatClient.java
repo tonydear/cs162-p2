@@ -259,6 +259,8 @@ public class ChatClient extends Thread{
 			e.printStackTrace();
 			return;
 		}
+		if(command == null)
+			return;
 		String[] tokens = command.split(" ");
 		int args = tokens.length;
 		if (tokens.length == 0)

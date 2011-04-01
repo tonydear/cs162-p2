@@ -167,8 +167,8 @@ public class ChatClient extends Thread{
 		TransportObject recObject = null;
 		try {
 			Object o = received.readObject();
-			if(o!=null)
-				System.out.println(o);
+			//if(o!=null)
+				//System.out.println(o);
 			recObject = (TransportObject) o;
 		} catch (SocketException e) {
 			connected = false;

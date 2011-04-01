@@ -81,7 +81,6 @@ public class User extends BaseUser {
 						}
 					}
 				}
-				System.out.println("sender thread of user ending now");
 			}
 			
 		};
@@ -91,14 +90,10 @@ public class User extends BaseUser {
 				while(!pendingLogoff){
 					processCommand();
 				}
-				System.out.println("receiver thread of user ending now");
 			}
 		};
-		System.out.println("about to start sender/receiver threads");
 		receiver.start();
-		System.out.println("receiver thread started");
 		sender.start();
-		System.out.println("sender thread started");
 		return true;
 
 	}
@@ -168,7 +163,6 @@ public class User extends BaseUser {
 		TestChatServer.logUserSendMsg(username, formattedMsg);
 		sqn++;
 		toSend.add(msgJob);
-		System.out.println("toSend not empty"+msgJob);
 		sendLock.writeLock().unlock();
 	}
 
@@ -232,7 +226,6 @@ public class User extends BaseUser {
 						sender.queueReply(error);
 					}
 				}
-				e.printStackTrace();
 			}
 		}
 		loggedOff = true;
@@ -270,7 +263,7 @@ public class User extends BaseUser {
 			queueReply(disconnAck);
 			mySocket.close();
 		} catch (IOException e) {
-			//			e.printStackTrace();
+			System.err.print(e);
 		}
 	}
 
@@ -279,9 +272,7 @@ public class User extends BaseUser {
 			sendLock.writeLock().lock();
 			if (!toSend.isEmpty()) {
 				MessageJob msgJob = toSend.poll();
-				System.out.println("about to processMessage on server");
 				MsgSendError msgStatus = server.processMessage(username, msgJob.dest, msgJob.msg, msgJob.sqn, msgJob.timestamp);
-				System.out.println("sending clientAck for message");
 				sendClientAck(msgStatus,msgJob);
 			}
 			sendLock.writeLock().unlock();
@@ -298,23 +289,17 @@ public class User extends BaseUser {
 		}
 		groupsJoined.clear();
 		TestChatServer.logUserLogout(username, new Date());
-		System.out.println("User thread died");
 	}
 
 	public void processCommand() {
 		TransportObject recv = null;
 		try {
-			System.out.println("waiting for command");
 			recv = (TransportObject) received.readObject();
-			System.out.println("read command");
 		} catch (Exception e) {
 			disconnect();
-			System.out.println("connection closed asynchronously");
 		}
-		System.out.println("Received new object " + recv);
 		if (recv == null)
-			disconnect();
-		
+			disconnect();	
 		else if (recv.getCommand() == Command.disconnect)
 			disconnect();
 		else if (recv.getCommand() == Command.login) {
@@ -322,11 +307,9 @@ public class User extends BaseUser {
 			queueReply(send);
 		} else if (recv.getCommand() == Command.logout) {
 			server.logoff(username);
-			System.out.println("received logout command");
 			try {
 				server.startNewTimer(new SocketParams(mySocket, received, sent));
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -335,7 +318,6 @@ public class User extends BaseUser {
 		else if (recv.getCommand() == Command.leave)
 			server.leaveGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.send) {
-			System.out.println("I got a message");
 			send(recv.getDest(), recv.getMessage(), recv.getSQN());
 		}
 	}

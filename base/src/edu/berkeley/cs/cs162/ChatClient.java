@@ -1,6 +1,7 @@
 package edu.berkeley.cs.cs162;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,6 +25,7 @@ public class ChatClient extends Thread{
 	private volatile boolean connected;
 	private Command reply; 				//what reply from server should look like
 	private volatile boolean isWaiting; //waiting for reply from server?
+	private volatile boolean isLoggedIn, isQueued;
 	
 	public ChatClient(){
 		mySocket = null;
@@ -79,7 +81,12 @@ public class ChatClient extends Thread{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		if(isLoggedIn)
+			output("logout OK");
 		output("disconnect OK");
+		isLoggedIn = false;
+		isQueued = false;
+		connected = false;
 	}
 	
 	private void output(String o){
@@ -87,7 +94,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void login(String username){
-		if (!connected)
+		if (!connected && (!isLoggedIn || !isQueued))
 			return;
 		TransportObject toSend = new TransportObject(Command.login, username);
 		try {
@@ -102,7 +109,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void logout(){
-		if (!connected)
+		if (!connected || (!isLoggedIn && !isQueued))
 			return;
 		TransportObject toSend = new TransportObject(Command.logout);
 		try {
@@ -117,7 +124,7 @@ public class ChatClient extends Thread{
 	}
 
 	private void join(String gname){
-		if(!connected)
+		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.join,gname);
 		try {
@@ -132,7 +139,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void leave(String gname){
-		if(!connected)
+		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.leave,gname);
 		try {
@@ -147,6 +154,8 @@ public class ChatClient extends Thread{
 	}
 	
 	private void send(String dest, int sqn, String msg){
+		if(!connected || !isLoggedIn)
+			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
 		try {
 			isWaiting = true;
@@ -172,14 +181,16 @@ public class ChatClient extends Thread{
 			System.out.println("user disconnected");
 			connected = false;
 			return;
-		} catch (Exception e) {
+		} catch (EOFException e) {
+			System.out.println("server connection lost");
+		}
+		catch (Exception e) {
 			e.printStackTrace();
 			connected = false;
 		}
 		
 		if (recObject == null){
 			//connected = false;
-			
 			return;
 		}
 		Command type = recObject.getCommand();
@@ -191,14 +202,28 @@ public class ChatClient extends Thread{
 			System.out.println("Got to this line");
 			if (reply.equals(Command.disconnect) || reply.equals(Command.login) || reply.equals(Command.logout)) {
 				output(type.toString() + " " + servReply.toString());
-				if (reply.equals(Command.disconnect))
+				if (reply.equals(Command.disconnect)){
 					connected = false;
+					isLoggedIn = false;
+					isQueued = false;
+				}
+				else if (reply.equals(Command.login)){
+					if(recObject.getServerReply().equals(ServerReply.OK)){
+						isQueued = false;
+						isLoggedIn = true;
+					}else if(recObject.getServerReply().equals(ServerReply.QUEUED)){
+						isQueued = true;
+					}
+				}else if (reply.equals(Command.logout)){
+					isLoggedIn = false;
+					isQueued = false;
+				}
 			}
 			else if (reply.equals(Command.join) || reply.equals(Command.leave))
 				output(type.toString() + " " + recObject.getGname() + " " + servReply.toString());
 			else if (reply.equals(Command.send))
 				output(type.toString() + " " + recObject.getSQN() + " " + servReply.toString());
-			else	
+			else
 				return;
 			
 			isWaiting = false;
@@ -213,7 +238,11 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
-		}else {
+		}else if (type.equals(Command.login) && isQueued){
+			output("login OK");
+			isQueued = false;
+			isLoggedIn = true;
+		} else {
 			System.out.println("What kind of server reply is this? " + servReply);
 		}
 	}

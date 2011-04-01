@@ -15,6 +15,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class User extends BaseUser {
@@ -65,8 +66,9 @@ public class User extends BaseUser {
 				while(!pendingLogoff) {
 					TransportObject reply = null;
 					try {
-						reply = queuedServerReplies.take();
-						sent.writeObject(reply);
+						reply = queuedServerReplies.poll(3, TimeUnit.SECONDS);
+						if(reply != null)
+							sent.writeObject(reply);
 					} catch (SocketException e) {
 						
 					} catch (Exception e) {
@@ -302,7 +304,9 @@ public class User extends BaseUser {
 	public void processCommand() {
 		TransportObject recv = null;
 		try {
+			System.out.println("waiting for command");
 			recv = (TransportObject) received.readObject();
+			System.out.println("read command");
 		} catch (Exception e) {
 			disconnect();
 			System.out.println("connection closed asynchronously");

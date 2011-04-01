@@ -1,0 +1,9 @@
+connect Paperweight:8080
+login testuser
+join testgroup
+send testgroup 1 hi testgroup
+send testuser 1 hi to me!
+leave testgroup
+logout
+disconnect
+

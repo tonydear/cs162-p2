@@ -464,6 +464,14 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			}
 	}
 	
+	public void removeFromQueue(String username) {
+		lock.writeLock().lock();
+		allNames.remove(username);
+		waiting_users.remove(username);
+		waiting_sockets.remove(username);
+		lock.writeLock().unlock();
+	}
+	
 	public static void main(String[] args) throws Exception{
 		if (args.length != 1) {
 			throw new Exception("Invalid number of args to command");

@@ -374,6 +374,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					
 					TransportObject sendObject = new TransportObject(ServerReply.timeout);
 					sent.writeObject(sendObject);
+					handler.socket.close();
 					System.out.println("client timing out");
 				}
 			} catch (InterruptedException e) {

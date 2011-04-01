@@ -39,6 +39,10 @@ public class ChatClient extends Thread{
 	
 	private void connect(String hostname, int port){
 		try {
+			if (connected) {
+				System.err.println("already connected");
+				return;
+			}
 			mySocket = new Socket(hostname,port);
 			sent = new ObjectOutputStream(mySocket.getOutputStream());
 			InputStream input = mySocket.getInputStream();
@@ -103,6 +107,7 @@ public class ChatClient extends Thread{
 		TransportObject toSend = new TransportObject(Command.logout);
 		try {
 			sent.writeObject(toSend);
+			System.out.println("just sent logout object");
 			isWaiting = true;
 			reply = Command.logout;
 			this.wait();
@@ -271,6 +276,7 @@ public class ChatClient extends Thread{
 		else if (tokens[0].equals("logout")) {
 			if(args != 1)
 				throw new Exception("invalid arguments for logout command");
+			System.out.println("received logout command from terminal");
 			logout();
 		}
 		else if (tokens[0].equals("join")) {

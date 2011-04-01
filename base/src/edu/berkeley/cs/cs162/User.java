@@ -62,7 +62,7 @@ public class User extends BaseUser {
 		sender = new Thread(){
 			@Override
 			public void run(){
-				while(!loggedOff) {
+				while(!pendingLogoff) {
 					TransportObject reply = null;
 					try {
 						reply = queuedServerReplies.take();
@@ -87,7 +87,7 @@ public class User extends BaseUser {
 		receiver = new Thread(){
 			@Override
 			public void run(){
-				while(!loggedOff){
+				while(!pendingLogoff){
 					processCommand();
 				}
 				System.out.println("receiver thread of user ending now");
@@ -209,7 +209,9 @@ public class User extends BaseUser {
 
 	public void logoff() {
 		pendingLogoff = true;
+		
 		logoffAck();
+		
 		while (!queuedServerReplies.isEmpty()) {
 			TransportObject reply = null;
 			try {
@@ -249,7 +251,7 @@ public class User extends BaseUser {
 
 	public void logoffAck() {
 		TransportObject logoutAck = new TransportObject(Command.logout, ServerReply.OK);
-		queueReply(logoutAck);
+		queuedServerReplies.add(logoutAck);
 	}
 
 	public ObjectOutputStream getOutputStream() {
@@ -301,8 +303,10 @@ public class User extends BaseUser {
 			disconnect();
 			System.out.println("connection closed asynchronously");
 		}
+		System.out.println("Received new object " + recv);
 		if (recv == null)
 			disconnect();
+		
 		else if (recv.getCommand() == Command.disconnect)
 			disconnect();
 		else if (recv.getCommand() == Command.login) {
@@ -310,6 +314,7 @@ public class User extends BaseUser {
 			queueReply(send);
 		} else if (recv.getCommand() == Command.logout) {
 			server.logoff(username);
+			System.out.println("received logout command");
 			try {
 				server.startNewTimer(new SocketParams(mySocket, received, sent));
 			} catch (IOException e) {

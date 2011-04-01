@@ -478,7 +478,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 								}
 								if(newUser != null)
 									newUser.setSocket(socket, received, sent);
-							} else if (loginError == LoginError.USER_REJECTED){
+							} else if (loginError == LoginError.USER_DROPPED || loginError == LoginError.USER_REJECTED){
 								sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
 								
 								recObject = null;

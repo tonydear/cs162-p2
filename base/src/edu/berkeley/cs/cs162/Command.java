@@ -8,5 +8,6 @@ public enum Command {
 	logout,
 	join,
 	leave,
-	send
+	send,
+	adduser
 }

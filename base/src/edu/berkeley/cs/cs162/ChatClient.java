@@ -90,15 +90,28 @@ public class ChatClient extends Thread{
 		System.out.println(o);
 	}
 	
-	private void login(String username){
+	private void adduser(String username, String password){
+		if(!connected || isLoggedIn || isQueued)
+			return;
+		TransportObject toSend = new TransportObject(Command.adduser,username,password);
+		try{
+			isWaiting = true;
+			sent.writeObject(toSend);
+			reply = Command.adduser;
+			this.wait();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void login(String username, String password){
 		if (!connected && (!isLoggedIn || !isQueued))
 			return;
-		TransportObject toSend = new TransportObject(Command.login, username);
+		TransportObject toSend = new TransportObject(Command.login, username, password);
 		try {
 			isWaiting = true;
 			reply = Command.login;
 			sent.writeObject(toSend);
-			reply = Command.login;
 			this.wait();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -191,7 +204,8 @@ public class ChatClient extends Thread{
 		if (servReply.equals(ServerReply.error)) {
 			System.err.println("Error");
 		} else if (isWaiting && type.equals(reply)) {
-			if (reply.equals(Command.disconnect) || reply.equals(Command.login) || reply.equals(Command.logout)) {
+			if (reply.equals(Command.disconnect) || reply.equals(Command.login) || 
+					reply.equals(Command.logout) || reply.equals(Command.adduser)) {
 				output(type.toString() + " " + servReply.toString());
 				if (reply.equals(Command.disconnect)){
 					connected = false;
@@ -289,10 +303,18 @@ public class ChatClient extends Thread{
 			disconnect();
 		}
 		else if (tokens[0].equals("login")) {
-			if (args != 2)
+			if (args != 3)
 				throw new Exception("invalid arguments for login command");
 			String username = tokens[1];
-			login(username);
+			String password = tokens[2];
+			login(username,password);
+		}
+		else if (tokens[0].equals("adduser")) {
+			if (args != 3)
+				throw new Exception("invalid arguments for adduser command");
+			String username = tokens[1];
+			String password = tokens[2];
+			adduser(username,password);
 		}
 		else if (tokens[0].equals("logout")) {
 			if(args != 1)

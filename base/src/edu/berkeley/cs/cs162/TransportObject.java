@@ -5,6 +5,7 @@ import java.io.Serializable;
 public class TransportObject implements Serializable {
 	private Command command;
 	private String username;
+	private String password;
 	private String gname;
 	private String sender;
 	private String dest;
@@ -24,6 +25,7 @@ public class TransportObject implements Serializable {
 		msg = null;
 		time = 0;
 		reply = ServerReply.NONE;
+		password = null;
 	}
 	
 	//Default with cmd; client logout, disconnect
@@ -32,13 +34,17 @@ public class TransportObject implements Serializable {
 		command = cmd;
 	}
 	
-	//Client login, join, leave
+	//Client join, leave
 	public TransportObject(Command cmd, String in1) {
 		this(cmd);
-		if (cmd == Command.login)
-			username = in1; 
-		else 
-			gname = in1; 
+		gname = in1; 
+	}
+	
+	//Client login, adduser
+	public TransportObject(Command cmd, String name, String pw) {
+		this(cmd);
+		username = name;
+		password = pw;
 	}
 	
 	//Client send

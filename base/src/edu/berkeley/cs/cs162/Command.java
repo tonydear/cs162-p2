@@ -9,5 +9,6 @@ public enum Command {
 	join,
 	leave,
 	send,
-	adduser
+	adduser,
+	readlog
 }

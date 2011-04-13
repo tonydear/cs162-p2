@@ -127,6 +127,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return ServerReply.NONE;
 	}
 	
+	public void readlog(String username){
+		
+	}
+	
 	@Override
 	public LoginError login(String username) {
 		lock.writeLock().lock();

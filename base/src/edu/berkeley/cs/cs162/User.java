@@ -314,6 +314,9 @@ public class User extends BaseUser {
 				e.printStackTrace();
 			}
 		}
+		else if(recv.getCommand() == Command.readlog){
+			server.readlog(username);
+		}
 		else if (recv.getCommand() == Command.join)
 			server.joinGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.leave)

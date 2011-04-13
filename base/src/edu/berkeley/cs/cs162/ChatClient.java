@@ -263,7 +263,14 @@ public class ChatClient extends Thread{
 	}
 	
 	private void readlog(){
-		
+		TransportObject toSend = new TransportObject(Command.readlog);
+		try{
+			sent.writeObject(toSend);
+		} catch (Exception e){
+			connected = false;
+			isLoggedIn = false;
+			isQueued = false; //should be already
+		}
 	}
 	
 	public Map<String,ChatLog> getLogs(){

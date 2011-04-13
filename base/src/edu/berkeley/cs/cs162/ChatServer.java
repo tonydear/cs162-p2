@@ -123,6 +123,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return num;
 	}
 	
+	public ServerReply adduser(String username, String password){
+		return ServerReply.NONE;
+	}
+	
 	@Override
 	public LoginError login(String username) {
 		lock.writeLock().lock();
@@ -472,8 +476,17 @@ public class ChatServer extends Thread implements ChatServerInterface {
 							} catch (IOException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
+							}	
+						} else if (type == Command.adduser) {
+							String username = recObject.getUsername();
+							String password = recObject.getPassword();
+							ServerReply reply = adduser(username,password);
+							TransportObject sendObject = new TransportObject(type,reply);
+							try {
+								sent.writeObject(sendObject);
+							} catch (IOException e) {
+								e.printStackTrace();
 							}
-							
 						}
 					}
 		    	}

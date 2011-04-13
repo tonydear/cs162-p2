@@ -55,7 +55,7 @@ public class TransportObject implements Serializable {
 		this.msg = msg;
 	}
 	
-	//Server disconnect, login, logout
+	//Server disconnect, login, logout, adduser
 	public TransportObject(Command cmd, ServerReply reply) {
 		this(cmd);
 		this.reply = reply;
@@ -100,6 +100,7 @@ public class TransportObject implements Serializable {
 	//Getters
 	public Command getCommand() { return command; }	
 	public String getUsername() { return username; }
+	public String getPassword() { return password; }
 	public String getGname() { return gname; }	
 	public String getSender() { return sender; }
 	public String getDest() { return dest; }

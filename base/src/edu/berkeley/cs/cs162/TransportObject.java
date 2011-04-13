@@ -23,6 +23,7 @@ public class TransportObject implements Serializable {
 		dest = null;
 		sqn = 0;
 		msg = null;
+		timestamp = 0;
 		reply = ServerReply.NONE;
 		password = null;
 	}
@@ -82,12 +83,13 @@ public class TransportObject implements Serializable {
 	}
 	
 	//Server receive 
-	public TransportObject(ServerReply reply, String sender, String dest, String msg) {
+	public TransportObject(ServerReply reply, String sender, String dest, String msg, long timestamp) {
 		this();
 		this.reply = reply;
 		this.sender = sender;
 		this.dest = dest;
 		this.msg = msg;
+		this.timestamp = timestamp;
 	}
 	
 	//Timeout
@@ -106,4 +108,5 @@ public class TransportObject implements Serializable {
 	public int getSQN() { return sqn; }
 	public String getMessage() { return msg; }
 	public ServerReply getServerReply() { return reply; }
+	public long getTimestamp() { return timestamp; }
 }

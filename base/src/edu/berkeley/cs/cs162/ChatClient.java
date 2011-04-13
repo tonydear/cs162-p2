@@ -239,7 +239,8 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.sendack))
 			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");			
 		else if (servReply.equals(ServerReply.receive))
-			output(servReply.toString() + " " + recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
+			output(servReply.toString() + " " +
+					recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
@@ -259,6 +260,10 @@ public class ChatClient extends Thread{
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void readlog(){
+		
 	}
 	
 	public Map<String,ChatLog> getLogs(){
@@ -359,6 +364,11 @@ public class ChatClient extends Thread{
 				return;
 			}
 			sleep(time);
+		}
+		else if (tokens[0].equals("readlog")){
+			if(args!=1)
+				throw new Exception("invalid arguments for readlog command");
+			readlog();
 		}
 		else {
 			throw new Exception("invalid command");

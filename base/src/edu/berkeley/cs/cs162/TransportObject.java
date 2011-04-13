@@ -11,7 +11,7 @@ public class TransportObject implements Serializable {
 	private String dest;
 	private int sqn;
 	private String msg;
-	private int time;
+	private long timestamp;
 	private ServerReply reply;
 	
 	//Default
@@ -23,7 +23,6 @@ public class TransportObject implements Serializable {
 		dest = null;
 		sqn = 0;
 		msg = null;
-		time = 0;
 		reply = ServerReply.NONE;
 		password = null;
 	}
@@ -106,6 +105,5 @@ public class TransportObject implements Serializable {
 	public String getDest() { return dest; }
 	public int getSQN() { return sqn; }
 	public String getMessage() { return msg; }
-	public int getSleepTime() {	return time; }
 	public ServerReply getServerReply() { return reply; }
 }

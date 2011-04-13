@@ -239,7 +239,7 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.sendack))
 			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");			
 		else if (servReply.equals(ServerReply.receive))
-			output(servReply.toString() + " " +
+			output(servReply.toString() + " " + recObject.getTimestamp() + " " +
 					recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());

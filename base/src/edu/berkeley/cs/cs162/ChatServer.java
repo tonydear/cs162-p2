@@ -413,6 +413,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());
+			String username = user.getUsername();
+			try {
+				DBHandler.removeFromGroup(username, groupname);
+			} catch (SQLException e) {
+				System.err.println("unsuccessful membership deletion in database");
+			}
 			lock.writeLock().unlock();
 			return true;
 		}

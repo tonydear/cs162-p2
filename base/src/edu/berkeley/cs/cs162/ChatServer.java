@@ -289,7 +289,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			lock.writeLock().unlock();
 			return false;
 		}
-	
+		ResultSet rs = DBHandler.getUserMemberships(username);
+		try {
+			while(rs.next()) {
+				String g = rs.getString("gname");
+				ChatGroup c = groups.get(g);
+				if(c != null)
+					c.removeLoggedInUser(username);
+			}
+		} catch (SQLException e) {
+		}
 		users.get(username).logoff();
 		onlineNames.remove(username);
 		users.remove(username);

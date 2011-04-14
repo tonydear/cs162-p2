@@ -136,8 +136,23 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return num;
 	}
 	
-	public ServerReply adduser(String username, String password){
-		return ServerReply.NONE;
+	public ServerReply addUser(String username, String password){
+		Set allNames = new HashSet<String>();
+		allNames.addAll(onlineNames);
+		allNames.addAll(registeredUsers);
+		if(allNames.contains(username))
+			return ServerReply.REJECTED;
+		SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+		byte bytes[] = new byte[100];
+		random.nextBytes(bytes);
+		String salt = bytes.toString();
+		String hash = hashPassword(password, salt);
+		try {
+			DBHandler.addUser(username, salt, hash);
+		} catch(Exception e) {
+			return ServerReply.REJECTED;
+		}
+		return ServerReply.OK;
 	}
 	
 	public void readlog(String username){

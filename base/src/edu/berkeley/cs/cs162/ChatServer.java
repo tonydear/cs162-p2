@@ -41,7 +41,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private BlockingQueue<User> waiting_users;
 	private Map<String, User> users;
 	private Map<String, ChatGroup> groups;
-	private Set<String> allNames;
+	private Set<String> onlineNames;
+	private Set<String> registeredUsers;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
 	private final static int MAX_USERS = 100;
@@ -53,7 +54,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	public ChatServer() {
 		users = new HashMap<String, User>();
 		groups = new HashMap<String, ChatGroup>();
-		allNames = new HashSet<String>();
+		onlineNames = new HashSet<String>();
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
@@ -63,7 +64,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	public ChatServer(int port) throws IOException {
 		users = new HashMap<String, User>();
 		groups = new HashMap<String, ChatGroup>();
-		allNames = new HashSet<String>();
+		onlineNames = new HashSet<String>();
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
@@ -144,15 +145,15 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	@Override
-	public LoginError login(String username) {
+	public LoginError login(String username, String password) {
 		lock.writeLock().lock();
 		User newUser;
-		if(isDown){
+		if (isDown){
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
-		if (allNames.contains(username)) {
+		if (onlineNames.contains(username)) {
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
@@ -160,7 +161,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
 			newUser = new User(this, username);
 			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
-				allNames.add(username);
+				onlineNames.add(username);
 				lock.writeLock().unlock();
 				return LoginError.USER_QUEUED;
 			}
@@ -170,13 +171,25 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				return LoginError.USER_DROPPED;				
 			}
 		}
+		loginSuccess(username, password);
+	}
+	
+	public LoginError loginSuccess(String username, String password) {
 		newUser = new User(this, username);
 		users.put(username, newUser);
-		allNames.add(username);
+		onlineNames.add(username);
+		DBHandler.addUser(username, salt, hash);
 		newUser.connected();
 		TestChatServer.logUserLogin(username, new Date());
 		lock.writeLock().unlock();
-		return LoginError.USER_ACCEPTED;
+		return LoginError.USER_ACCEPTED;		newUser = new User(this, username);
+		users.put(username, newUser);
+		onlineNames.add(username);
+		DBHandler.addUser(username, salt, hash);
+		newUser.connected();
+		TestChatServer.logUserLogin(username, new Date());
+		lock.writeLock().unlock();
+		return LoginError.USER_ACCEPTED;		
 	}
 
 	@Override
@@ -193,7 +206,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			}
 			if(toRemove != null) {
 				waiting_users.remove(toRemove);
-				allNames.remove(toRemove.getUsername());
+				onlineNames.remove(toRemove.getUsername());
 				lock.writeLock().unlock();
 				return true;
 			}
@@ -202,7 +215,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		}
 	
 		users.get(username).logoff();
-		allNames.remove(username);
+		onlineNames.remove(username);
 		users.remove(username);
 		
 		// Check for waiting users
@@ -280,7 +293,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			return success;
 		}
 		else {
-			if(allNames.contains(groupname)){
+			if(onlineNames.contains(groupname)){
 				joinAck(user,groupname,ServerReply.BAD_GROUP);
 				lock.writeLock().unlock();
 				return false;
@@ -314,7 +327,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			leaveAck(user,groupname,ServerReply.OK);
 			if(group.getNumUsers() <= 0) { 
 				groups.remove(group.getName()); 
-				allNames.remove(group.getName());
+				onlineNames.remove(group.getName());
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());

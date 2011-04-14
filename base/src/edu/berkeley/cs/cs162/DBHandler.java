@@ -26,7 +26,6 @@ public class DBHandler {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
     }
     
     public static void addToGroup(String uname, String gname) throws SQLException{

@@ -61,8 +61,9 @@ public class DBHandler {
     
     public static List<Message> readLog(String uname) throws SQLException{
     	List<Message> messages = new ArrayList<Message>();
-    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = " + uname);
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = ?");
     	if(pstmt==null) return null;
+    	pstmt.setString(1, uname);
     	ResultSet rs = pstmt.executeQuery();
     	while(rs.next()){
     		String sender = rs.getString("sender");

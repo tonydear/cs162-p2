@@ -194,15 +194,14 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			return ServerReply.REJECTED;
 		}
 		SecureRandom random = null;
-		byte bytes[] = null;
+		byte salt[] = null;
 		try {
 			random = SecureRandom.getInstance("SHA1PRNG");
-			bytes = new byte[100];
-			random.nextBytes(bytes);
+			salt = new byte[100];
+			random.nextBytes(salt);
 		} catch (NoSuchAlgorithmException e1) {
 			System.err.println("no PRNG algorithm");
 		}
-		String salt = bytes.toString();
 		String hash = hashPassword(password, salt);
 
 		System.out.println("creating salt: " + salt + "hash: " + hash);
@@ -279,14 +278,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return LoginError.USER_ACCEPTED;		
 	}
 	
-	public String hashPassword(String password, String salt) {
+	public String hashPassword(String password, byte[] salt) {
 		String hashed = null;
 		try {
-			MessageDigest md = MessageDigest.getInstance("MD5");
-			String toHash = password + salt;
-			md.update(toHash.getBytes());
-		    MessageDigest tc1 = (MessageDigest) md.clone();
-		    hashed = tc1.digest().toString();
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.reset();
+			md.update(salt);
+		    hashed = md.digest(password.getBytes("UTF-8")).toString();
 		} catch (Exception e) {
 			System.err.println("oops");
 		}

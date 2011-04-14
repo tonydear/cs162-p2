@@ -279,11 +279,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.reset();
-			md.update(salt_TEMP);
+			md.update(salt);
 		    hashed = md.digest(password.getBytes("UTF-8")).toString();
 		} catch (Exception e) {
 			System.err.println("oops");
 		}
+		System.out.println("HASHED!! " + hashed);
 	    return hashed;
 	}
 

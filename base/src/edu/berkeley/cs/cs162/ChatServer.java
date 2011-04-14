@@ -62,8 +62,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
-		//initStructures();
-		
 	}
 	
 	public ChatServer(int port) throws IOException {
@@ -79,16 +77,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
-		try{
+		try {
 			initStructures();
-		}catch (Exception e){
+		} catch (Exception e){
 			e.printStackTrace();
 			return;
 		}
 		this.start();
 	}
 	
-	private void initStructures() throws Exception{
+	private void initStructures() throws Exception {
 		//initialize registeredUsers
 		ResultSet Usernames = DBHandler.getUsers();
 		while(Usernames.next()) {
@@ -114,7 +112,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		}
 	}
 	
-	public boolean isDown() { return isDown;}
+	public boolean isDown() { return isDown; }
 	
 	@Override
 	public BaseUser getUser(String username) {
@@ -141,7 +139,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return groupNames;
 	}
 	
-	public Set<String> getUsers() { //needs to fix
+	public Set<String> getActiveUsers() {
 		Set<String> userNames;
 		lock.readLock().lock();
 		userNames = users.keySet();
@@ -149,12 +147,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return userNames;
 	}
 	
-	public Set<String> getActiveUsers() {
-		Set<String> userNames;
-		lock.readLock().lock();
-		userNames = users.keySet();
-		lock.readLock().unlock();
-		return userNames;
+	public Set<String> getAllUsers() {
+		return registeredUsers;
 	}
 	
 	public int getNumUsers(){
@@ -274,17 +268,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 
 	@Override
 	public boolean logoff(String username) {
-		// TODO Auto-generated method stub
 		lock.writeLock().lock();
-		if(!users.containsKey(username)){
+		if (!users.containsKey(username)){
 			User toRemove = null;
-			for(User u : waiting_users) {
+			for (User u : waiting_users) {
 				if(u.getUsername().equals(username)) {
 					u.logoff();
 					toRemove = u;
 				}
 			}
-			if(toRemove != null) {
+			if (toRemove != null) {
 				waiting_users.remove(toRemove);
 				onlineNames.remove(toRemove.getUsername());
 				lock.writeLock().unlock();
@@ -300,7 +293,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		
 		// Check for waiting users
 		User newUser = waiting_users.poll();
-		if(newUser != null) {							//add to ChatServer
+		if (newUser != null) {							//add to ChatServer
 			String newUsername = newUser.getUsername();
 			users.put(newUsername, newUser);
 			TransportObject reply = new TransportObject(Command.login, ServerReply.OK);
@@ -330,21 +323,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			ObjectOutputStream sent = params.getOutputStream();
 			List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 			if (futures.get(0).isCancelled()) {
-				
 				TransportObject sendObject = new TransportObject(ServerReply.timeout);
 				sent.writeObject(sendObject);
 			}
-		} catch (SocketException e) {
-			
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-		@Override
+	@Override
 	public boolean joinGroup(BaseUser baseUser, String groupname) {
-		// TODO Auto-generated method stub
 		lock.writeLock().lock();
 		ChatGroup group;
 		User user = (User) baseUser;
@@ -353,7 +341,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			lock.writeLock().unlock();
 			return false;
 		}
-		if(groups.containsKey(groupname)) {
+		if (groups.containsKey(groupname)) {
 			group = groups.get(groupname);
 			success = group.joinGroup(user.getUsername(), user);
 			if(user.getUserGroups().contains(groupname)){
@@ -361,19 +349,17 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				lock.writeLock().unlock();
 				return false;
 			}
-			
-			
-			if(success){
+			if (success){
 				user.addToGroups(groupname);
 				joinAck(user,groupname,ServerReply.OK_JOIN);
 				TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
-			}else
+			} else
 				joinAck(user,groupname,ServerReply.FAIL_FULL);
 			lock.writeLock().unlock();
 			return success;
 		}
 		else {
-			if(onlineNames.contains(groupname)){
+			if (onlineNames.contains(groupname)){
 				joinAck(user,groupname,ServerReply.BAD_GROUP);
 				lock.writeLock().unlock();
 				return false;
@@ -385,8 +371,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
 			if(success)
 				joinAck(user,groupname,ServerReply.OK_CREATE);
-			//else
-				//System.err.println("why can't i create?");
 			lock.writeLock().unlock();
 			return success;
 		}
@@ -394,7 +378,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 
 	@Override
 	public boolean leaveGroup(BaseUser baseUser, String groupname) {
-		// TODO Auto-generated method stub
 		User user = (User) baseUser;
 		lock.writeLock().lock();
 		ChatGroup group = groups.get(groupname);
@@ -403,7 +386,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			lock.writeLock().unlock();
 			return false;
 		}
-		if(group.leaveGroup(user.getUsername())) {
+		if (group.leaveGroup(user.getUsername())) {
 			leaveAck(user,groupname,ServerReply.OK);
 			if(group.getNumUsers() <= 0) { 
 				groups.remove(group.getName()); 
@@ -463,7 +446,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					TestChatServer.logChatServerDropMsg(message.toString(), new Date());
 					lock.readLock().unlock();
 					return sendError;
-				} else if(sendError == MsgSendError.MESSAGE_FAILED){
+				} else if (sendError == MsgSendError.MESSAGE_FAILED){
 					lock.readLock().unlock();
 					return sendError;
 				}
@@ -497,7 +480,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				t.start();
 				
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -517,8 +499,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
-					//ObjectInputStream received = new ObjectInputStream(newSocket.getInputStream());
-					
 					TransportObject sendObject = new TransportObject(ServerReply.timeout);
 					sent.writeObject(sendObject);
 					handler.socket.close();
@@ -596,7 +576,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 							try {
 								sent.writeObject(sendObject);
 							} catch (IOException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}	
 						} else if (type == Command.adduser) {
@@ -629,7 +608,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			String[] tokens = line.split(" ");
 			if(tokens[0].equals("users")){
 				if(tokens.length==1) // get users
-					System.out.println(chatServer.getUsers());
+					System.out.println(chatServer.getAllUsers());
 				else { // get users from a specific group
 					ChatGroup group = chatServer.getGroup(tokens[1]);
 					if(group==null)

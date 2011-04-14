@@ -108,22 +108,6 @@ public class User extends BaseUser {
 		return groupsJoined;
 	}
 
-	public Set<String> getAllUsers() {
-		return server.getUsers();
-	}
-
-	public Set<String> getAllGroups() { 
-		return server.getGroups();
-	}
-
-	public int getNumUsers() {
-		return server.getNumUsers();
-	}
-
-	public int getNumGroups() {
-		return server.getNumGroups();
-	}
-
 	public void addToGroups(String group) {
 		groupsJoined.add(group);
 	}

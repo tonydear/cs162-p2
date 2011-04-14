@@ -17,7 +17,14 @@ import java.util.concurrent.Executors;
 public class TestChatServer {
 	
 	public static void main(String [] args) throws InterruptedException {
-		ChatServerInterface s = new ChatServer();
+		ChatServerInterface s = null;
+		try {
+			s = new ChatServer(0);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			return;
+		}
 		ExecutorService exe = Executors.newFixedThreadPool(10);
 		int i;
 		

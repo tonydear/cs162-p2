@@ -55,16 +55,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private ServerSocket mySocket;
 	private ExecutorService pool;
 	
-	/*public ChatServer() {
+	public ChatServer() {
 		users = new HashMap<String, User>();
 		groups = new HashMap<String, ChatGroup>();
 		onlineNames = new HashSet<String>();
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
-		initStructures();
+		//initStructures();
 		
-	}*/
+	}
 	
 	public ChatServer(int port) throws IOException {
 		users = new HashMap<String, User>();

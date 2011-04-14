@@ -194,7 +194,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			return ServerReply.REJECTED;
 		}
 		SecureRandom random = null;
-		byte salt[] = null;
+		byte[] salt = null;
 		try {
 			random = SecureRandom.getInstance("SHA1PRNG");
 			salt = new byte[100];

@@ -247,11 +247,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	public LoginError loginAttempt(String username, String password) {
 		byte[] salt = null;
 		try {
-			try {
-				salt = DBHandler.getSalt(username);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			salt = DBHandler.getSalt(username);
 			
 			String hash = hashPassword(password, salt);
 			System.out.println(salt + ":salt hash:" + hash);
@@ -259,7 +255,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 				return LoginError.USER_REJECTED;			
 			}
-		} catch (SQLException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		if (users.size() >= MAX_USERS) {		//exceeds capacity

@@ -213,10 +213,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	public void readlog(String username) throws SQLException{
+		lock.readLock().lock();
 		List<Message> unsentMessages = DBHandler.readAndClearLog(username);
 		for (Message message : unsentMessages) {
 			users.get(username).acceptMsg(message);
 		}
+		lock.readLock().unlock();
 	}
 	
 	@Override

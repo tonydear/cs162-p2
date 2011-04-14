@@ -551,7 +551,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 						} else if (type == Command.adduser) {
 							String username = recObject.getUsername();
 							String password = recObject.getPassword();
-							ServerReply reply = adduser(username,password);
+							ServerReply reply = addUser(username,password);
 							TransportObject sendObject = new TransportObject(type,reply);
 							try {
 								sent.writeObject(sendObject);

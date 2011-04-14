@@ -20,6 +20,5 @@ public class DBHandler {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
     }
 }

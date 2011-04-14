@@ -27,7 +27,7 @@ public class ChatGroup {
 		userList.add(uname);
 	}
 	
-	public void addLoggedInUser(String uname, User u)                                                                {
+	public void addLoggedInUser(String uname, User u) {
 		loggedInUsers.put(uname, u);
 	}
 	

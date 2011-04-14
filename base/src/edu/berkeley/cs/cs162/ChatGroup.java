@@ -1,5 +1,6 @@
 package edu.berkeley.cs.cs162;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,20 +59,34 @@ public class ChatGroup {
 	public boolean joinGroup(String user, BaseUser userObj) {
 		if(loggedInUsers.containsKey(user))			//user already in group
 			return false;
-		if(loggedInUsers.size() + 1 > MAX_USERS)		//adding user would exceed capacity
+		if(userList.size() + 1 > MAX_USERS)		//adding user would exceed capacity
 			return false;
-		loggedInUsers.put(user, (User)userObj);			//add user to hashmap
-		userList.add(user);
-		DBHandler.addToGroup(user,name);
+		
+		try {
+			DBHandler.addToGroup(user,name);
+			loggedInUsers.put(user, (User)userObj);			//add user to hashmap
+			userList.add(user);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
 		return true;
 	}
 	
 	public boolean leaveGroup(String user) {
-		userList.remove(user);
 		if(!loggedInUsers.containsKey(user))			//user was not registered with group
 			return false;
-		loggedInUsers.remove(user);					//remove user from hashmap
-		DBHandler.removeFromGroup(user,name);
+							//remove user from hashmap
+		try {
+			DBHandler.removeFromGroup(user,name);
+			loggedInUsers.remove(user);
+			userList.remove(user);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
 		return true;
 	}
 	

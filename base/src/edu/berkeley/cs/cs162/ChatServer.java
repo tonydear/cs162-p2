@@ -56,7 +56,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private ServerSocket mySocket;
 	private ExecutorService pool;
 	
-	public ChatServer() {
+	/*public ChatServer() {
 		users = new HashMap<String, User>();
 		groups = new HashMap<String, ChatGroup>();
 		onlineNames = new HashSet<String>();
@@ -65,7 +65,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		isDown = false;
 		initStructures();
 		
-	}
+	}*/
 	
 	public ChatServer(int port) throws IOException {
 		users = new HashMap<String, User>();
@@ -80,11 +80,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
-		initStructures();
+		try{
+			initStructures();
+		}catch (Exception e){
+			e.printStackTrace();
+			return;
+		}
 		this.start();
 	}
 	
-	private void initStructures() {
+	private void initStructures() throws Exception{
 		//initialize registeredUsers
 		ResultSet Usernames = DBHandler.getUsers();
 		while(Usernames.next()) {

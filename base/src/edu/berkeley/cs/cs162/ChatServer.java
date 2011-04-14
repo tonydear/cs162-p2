@@ -173,12 +173,29 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return num;
 	}
 	
+	private void initUserGroups(User u){
+		ResultSet rs = DBHandler.getUserMemberships(u.getUsername());
+		try {
+			while(rs.next()){
+				ChatGroup group = groups.get(rs.getString("gname"));
+				group.addLoggedInUser(u.getUsername(), u);
+				u.addToGroups(group.getName());
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public ServerReply addUser(String username, String password){
+		lock.writeLock().lock();
 		Set<String> allNames = new HashSet<String>();
 		allNames.addAll(onlineNames);
 		allNames.addAll(registeredUsers);
-		if(allNames.contains(username))
+		if(allNames.contains(username)) {
+			lock.writeLock().unlock();
 			return ServerReply.REJECTED;
+		}
 		SecureRandom random = null;
 		byte bytes[] = null;
 		try {
@@ -186,7 +203,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			bytes = new byte[100];
 			random.nextBytes(bytes);
 		} catch (NoSuchAlgorithmException e1) {
-			// TODO Auto-generated catch block
 			System.err.println("no PRNG algorithm");
 		}
 		String salt = bytes.toString();
@@ -194,9 +210,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		try {
 			DBHandler.addUser(username, salt, hash);
 		} catch(Exception e) {
+			lock.writeLock().unlock();
 			return ServerReply.REJECTED;
 		}
 		registeredUsers.add(username);
+		lock.writeLock().unlock();
 		return ServerReply.OK;
 	}
 	
@@ -217,43 +235,41 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
-		if (users.size() >= MAX_USERS) {		//exceeds capacity
-			User newUser = new User(this, username);
-			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
-				onlineNames.add(username);
-				lock.writeLock().unlock();
-				return LoginError.USER_QUEUED;
-			}
-			else {								//else drop user
-				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
-				lock.writeLock().unlock();
-				return LoginError.USER_DROPPED;				
-			}
-		}
-		return loginSuccess(username, password);
+		
+		LoginError error = loginAttempt(username, password);
+		lock.writeLock().unlock();
+		return error;
 	}
 	
-	public LoginError loginSuccess(String username, String password) {
+	public LoginError loginAttempt(String username, String password) {
 		String salt;
 		try {
 			salt = DBHandler.getSalt(username);
 			String hash = hashPassword(password, salt);
 			if (hash == null || !hash.equals(DBHandler.getHashedPassword(username))) {
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
-				lock.writeLock().unlock();
 				return LoginError.USER_REJECTED;			
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
+		if (users.size() >= MAX_USERS) {		//exceeds capacity
+			User newUser = new User(this, username);
+			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
+				onlineNames.add(username);
+				return LoginError.USER_QUEUED;
+			}
+			else {								//else drop user
+				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
+				return LoginError.USER_DROPPED;				
+			}
+		}
 		User newUser = new User(this, username);
 		users.put(username, newUser);
 		onlineNames.add(username);
-		registeredUsers.add(username);
 		newUser.connected();
 		TestChatServer.logUserLogin(username, new Date());
-		lock.writeLock().unlock();
+		initUserGroups(newUser);
 		return LoginError.USER_ACCEPTED;		
 	}
 	
@@ -306,6 +322,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			newUser.queueReply(reply);
 			newUser.connected();
 			TestChatServer.logUserLogin(newUsername, new Date());
+			initUserGroups(newUser);
 		}
 		
 		lock.writeLock().unlock();	
@@ -407,9 +424,20 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(group.getNumUsers() <= 0) { 
 				groups.remove(group.getName()); 
 				onlineNames.remove(group.getName());
+				try {
+					DBHandler.removeGroup(groupname);
+				} catch (SQLException e) {
+					System.err.println("unsuccessful group removal from database");
+				}
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());
+			String username = user.getUsername();
+			try {
+				DBHandler.removeFromGroup(username, groupname);
+			} catch (SQLException e) {
+				System.err.println("unsuccessful membership deletion in database");
+			}
 			lock.writeLock().unlock();
 			return true;
 		}
@@ -437,19 +465,27 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		Message message = new Message(timestamp, source, dest, msg);
 		message.setSQN(sqn);
 		lock.readLock().lock();
-		if (users.containsKey(source)) {
+		if (users.containsKey(source)) {				//Valid destination user
 			if (users.containsKey(dest)) {
 				User destUser = users.get(dest);
 				destUser.acceptMsg(message);
-			} else if (groups.containsKey(dest)) {
+			}
+			else if (registeredUsers.contains(dest)) {	//Registered offline user
+				try {
+					DBHandler.writeLog(message, dest);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			else if (groups.containsKey(dest)) {		//Group destination
 				message.setIsFromGroup();
 				ChatGroup group = groups.get(dest);
 				MsgSendError sendError = group.forwardMessage(message);
-				if (sendError==MsgSendError.NOT_IN_GROUP) {
+				if (sendError == MsgSendError.NOT_IN_GROUP) {
 					TestChatServer.logChatServerDropMsg(message.toString(), new Date());
 					lock.readLock().unlock();
 					return sendError;
-				} else if(sendError==MsgSendError.MESSAGE_FAILED){
+				} else if(sendError == MsgSendError.MESSAGE_FAILED){
 					lock.readLock().unlock();
 					return sendError;
 				}

@@ -245,7 +245,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	public LoginError loginAttempt(String username, String password) {
-		String salt;
+		byte[] salt;
 		try {
 			salt = DBHandler.getSalt(username);
 			

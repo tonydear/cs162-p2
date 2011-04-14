@@ -89,13 +89,13 @@ public class DBHandler {
     	pstmt.executeUpdate();
     }
     
-    public static String getSalt(String username) throws SQLException {
+    public static byte[] getSalt(String username) throws SQLException {
     	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
     	if(pstmt == null) return null;
     	pstmt.setString(1, username);
     	ResultSet rs = pstmt.executeQuery();
     	rs.next();
-    	String salt = rs.getString("salt");
+    	byte[] salt = rs.getBytes("salt");
     	return salt;
     	
     }

@@ -404,6 +404,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(group.getNumUsers() <= 0) { 
 				groups.remove(group.getName()); 
 				onlineNames.remove(group.getName());
+				try {
+					DBHandler.removeGroup(groupname);
+				} catch (SQLException e) {
+					System.err.println("unsuccessful group removal from database");
+				}
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());

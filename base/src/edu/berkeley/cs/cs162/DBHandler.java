@@ -133,4 +133,16 @@ public class DBHandler {
     	Statement stmt = conn.createStatement();
     	return stmt.executeQuery("SELECT * FROM memberships");
     }
+
+	public static void removeGroup(String gname) throws SQLException {
+		PreparedStatement pstmt = null;
+    	try {
+    		pstmt = conn.prepareStatement("DELETE FROM groups WHERE gname = ?");
+    		pstmt.setString(1, gname);
+    		pstmt.executeUpdate();
+    	} 
+    	finally {
+    		if(pstmt!=null) pstmt.close();
+    	}		
+	}
 }

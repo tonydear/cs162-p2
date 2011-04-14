@@ -42,6 +42,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private Map<String, User> users;
 	private Map<String, ChatGroup> groups;
 	private Set<String> onlineNames;
+	private Set<String> registeredUsers;
 	private ReentrantReadWriteLock lock;
 	private volatile boolean isDown;
 	private final static int MAX_USERS = 100;

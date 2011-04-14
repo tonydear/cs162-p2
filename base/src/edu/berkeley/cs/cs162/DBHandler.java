@@ -14,6 +14,7 @@ import java.util.Properties;
 public class DBHandler {
     private static Connection conn;
     static {
+    	
         conn = null;
         Properties connectionProps = new Properties();
         connectionProps.put("user", "group24");

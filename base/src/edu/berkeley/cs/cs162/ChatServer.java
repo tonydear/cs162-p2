@@ -405,7 +405,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
 			if(success){
 				joinAck(user,groupname,ServerReply.OK_CREATE);
-				DBHandler.addGroup(groupname);
+				try {
+					DBHandler.addGroup(groupname);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
 			}
 			lock.writeLock().unlock();
 			return success;

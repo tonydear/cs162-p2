@@ -54,7 +54,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
-	private MessageDigest md;
+	private final byte[] salt_TEMP = new byte[2];
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -64,12 +64,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
-		try {
-			md = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 	}
 	
 	public ChatServer(int port) throws IOException {
@@ -197,7 +192,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		byte salt[] = null;
 		try {
 			random = SecureRandom.getInstance("SHA1PRNG");
-			salt = new byte[100];
+			salt = new byte[2];
 			random.nextBytes(salt);
 		} catch (NoSuchAlgorithmException e1) {
 			System.err.println("no PRNG algorithm");
@@ -208,6 +203,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		
 		try {
 			DBHandler.addUser(username, salt, hash);
+			System.out.println("salt check: " + DBHandler.getSalt(username));
 		} catch(Exception e) {
 			lock.writeLock().unlock();
 			e.printStackTrace();
@@ -283,7 +279,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.reset();
-			md.update(salt);
+			md.update(salt_TEMP);
 		    hashed = md.digest(password.getBytes("UTF-8")).toString();
 		} catch (Exception e) {
 			System.err.println("oops");

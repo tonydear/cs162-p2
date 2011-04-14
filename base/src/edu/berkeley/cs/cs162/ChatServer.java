@@ -651,7 +651,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		int port = Integer.parseInt(args[0]);
 		ChatServer chatServer = new ChatServer(port);
 		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
-		/*while(!chatServer.isDown()){
+		while(!chatServer.isDown()){
 			String line = commands.readLine();
 			String[] tokens = line.split(" ");
 			if(tokens[0].equals("users")){
@@ -673,6 +673,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			} else if (tokens[0].equals("shutdown")){
 				chatServer.shutdown();
 			}
-		}*/
+		}
 	}
 }

@@ -40,6 +40,7 @@ public class ChatGroup {
 		if(userlist.size() + 1 > MAX_USERS)		//adding user would exceed capacity
 			return false;
 		userlist.put(user, (User)userObj);			//add user to hashmap
+		//DBHandler.addToGroup(user,name);
 		return true;
 	}
 	
@@ -47,6 +48,7 @@ public class ChatGroup {
 		if(!userlist.containsKey(user))			//user was not registered with group
 			return false;
 		userlist.remove(user);					//remove user from hashmap
+		//DBHandler.removeFromGroup(user,name);
 		return true;
 	}
 	

@@ -14,12 +14,7 @@ import java.util.Properties;
 public class DBHandler {
     private static Connection conn;
     static {
-    	try {
-    		Class.forName("com.mysql.jdbc.Driver");
-		} catch (ClassNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
+    	
         conn = null;
         Properties connectionProps = new Properties();
         connectionProps.put("user", "group24");

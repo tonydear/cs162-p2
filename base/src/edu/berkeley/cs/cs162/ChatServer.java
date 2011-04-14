@@ -173,6 +173,20 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return num;
 	}
 	
+	private void initUserGroups(User u){
+		ResultSet rs = DBHandler.getUserMemberships(u.getUsername());
+		try {
+			while(rs.next()){
+				ChatGroup group = groups.get(rs.getString("gname"));
+				group.addLoggedInUser(u.getUsername(), u);
+				u.addToGroups(group.getName());
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public ServerReply addUser(String username, String password){
 		lock.writeLock().lock();
 		Set<String> allNames = new HashSet<String>();
@@ -252,6 +266,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		onlineNames.add(username);
 		newUser.connected();
 		TestChatServer.logUserLogin(username, new Date());
+		initUserGroups(newUser);
 		return LoginError.USER_ACCEPTED;		
 	}
 	
@@ -304,6 +319,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			newUser.queueReply(reply);
 			newUser.connected();
 			TestChatServer.logUserLogin(newUsername, new Date());
+			initUserGroups(newUser);
 		}
 		
 		lock.writeLock().unlock();	

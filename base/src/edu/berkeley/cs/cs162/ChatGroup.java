@@ -26,6 +26,15 @@ public class ChatGroup {
 		userList.add(uname);
 	}
 	
+	public void addLoggedInUser(String uname, User u)                                                                {
+		loggedInUsers.put(uname, u);
+	}
+	
+	public void removeLoggedInUser(String uname) {
+		loggedInUsers.remove(uname);
+	}
+	
+	
 	public HashMap<String, User> getUserList() {
 		return loggedInUsers;
 	}

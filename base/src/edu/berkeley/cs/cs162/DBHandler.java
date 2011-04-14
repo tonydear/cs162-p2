@@ -46,27 +46,22 @@ public class DBHandler {
     }
     
     public static List<Message> readLog(String uname) throws SQLException{
-    	PreparedStatement pstmt = null;
     	List<Message> messages = new ArrayList<Message>();
-    	try{
-    		pstmt = conn.prepareStatement("SELECT sender, sqn, timestamp, destination, message" +
-    		"FROM messages WHERE recipient = ?");
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT sender, sqn, timestamp, destination, message" +
+    	"FROM messages WHERE recipient = ?");
+    	if(pstmt==null) return null;
+    	ResultSet rs = pstmt.executeQuery();
+    	while(rs.next()){
+    		String sender = rs.getString("sender");
+    		int sqn = rs.getInt("sqn");
+    		Long timestamp = rs.getTime("timestamp").getTime();
+    		String destination = rs.getString("destination");
+    		String content = rs.getString("message");
+    		Message msg = new Message(timestamp.toString(),sender,destination,content);
+    		msg.setSQN(sqn);
+    		messages.add(msg);
     	}
-    	finally {
-    		if(pstmt==null) return null;
-    		ResultSet rs = pstmt.executeQuery();
-    		while(rs.next()){
-    			String sender = rs.getString("sender");
-    			int sqn = rs.getInt("sqn");
-    			Long timestamp = rs.getTime("timestamp").getTime();
-    			String destination = rs.getString("destination");
-    			String content = rs.getString("message");
-    			Message msg = new Message(timestamp.toString(),sender,destination,content);
-    			msg.setSQN(sqn);
-    			messages.add(msg);
-    		}
-    		pstmt.close();
-    	}
+    	
     	return messages;
     }
     

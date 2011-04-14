@@ -320,6 +320,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					c.removeLoggedInUser(username);
 			}
 		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 		users.get(username).logoff();
 		onlineNames.remove(username);
@@ -577,10 +578,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					try {
 						recObject = (TransportObject) received.readObject();
 					} catch (EOFException e) {
-						//System.err.println("user connection dropped/finished");
+						System.err.println("user connection dropped/finished");
 						return null;
 					} catch (SocketException e) {
-						//System.err.println("user socket exception");
+						System.err.println("user socket exception");
 						return null;
 					} catch (Exception e) {
 						e.printStackTrace();

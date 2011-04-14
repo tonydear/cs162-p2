@@ -54,7 +54,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
-	private final byte[] salt_TEMP = new byte[2];
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -168,11 +167,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private void initUserGroups(User u){
 		ResultSet rs = DBHandler.getUserMemberships(u.getUsername());
 		try {
+			System.out.println("initiating " + u.getUsername());
 			while(rs.next()){
 				ChatGroup group = groups.get(rs.getString("gname"));
 				group.addLoggedInUser(u.getUsername(), u);
 				u.addToGroups(group.getName());
 			}
+			System.out.println("done initiating " + u.getUsername());
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -402,8 +403,10 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			user.addToGroups(groupname);
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
-			if(success)
+			if(success){
 				joinAck(user,groupname,ServerReply.OK_CREATE);
+				DBHandler.addGroup(groupname);
+			}
 			lock.writeLock().unlock();
 			return success;
 		}

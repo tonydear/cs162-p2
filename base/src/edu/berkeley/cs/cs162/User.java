@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -315,7 +316,12 @@ public class User extends BaseUser {
 			}
 		}
 		else if(recv.getCommand() == Command.readlog){
-			server.readlog(username);
+			try {
+				server.readlog(username);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		else if (recv.getCommand() == Command.join)
 			server.joinGroup(this, recv.getGname());

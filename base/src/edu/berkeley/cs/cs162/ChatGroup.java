@@ -57,7 +57,7 @@ public class ChatGroup {
 	}
 	
 	public boolean joinGroup(String user, BaseUser userObj) {
-		if(loggedInUsers.containsKey(user))			//user already in group
+		if(userList.contains(user))			//user already in group
 			return false;
 		if(userList.size() + 1 > MAX_USERS)		//adding user would exceed capacity
 			return false;
@@ -77,13 +77,11 @@ public class ChatGroup {
 	public boolean leaveGroup(String user) {
 		if(!loggedInUsers.containsKey(user))			//user was not registered with group
 			return false;
-							//remove user from hashmap
 		try {
 			DBHandler.removeFromGroup(user,name);
-			loggedInUsers.remove(user);
+			loggedInUsers.remove(user);					//remove user from hashmap
 			userList.remove(user);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return false;
 		}
@@ -99,8 +97,18 @@ public class ChatGroup {
 		boolean success = true;
 		while(it.hasNext()) {
 			user = it.next();
-			if (!user.acceptMsg(msg))
-				success = false;
+			if (!user.acceptMsg(msg)) {
+				if (!userList.contains(user)) {
+					success = false;
+				}
+				else {
+					try {
+						DBHandler.writeLog(msg, user.getUsername());
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 		}
 		if (success)
 			return MsgSendError.MESSAGE_SENT;

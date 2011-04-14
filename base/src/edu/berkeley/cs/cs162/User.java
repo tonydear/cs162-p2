@@ -6,6 +6,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -106,22 +107,6 @@ public class User extends BaseUser {
 
 	public List<String> getUserGroups() {
 		return groupsJoined;
-	}
-
-	public Set<String> getAllUsers() {
-		return server.getUsers();
-	}
-
-	public Set<String> getAllGroups() { 
-		return server.getGroups();
-	}
-
-	public int getNumUsers() {
-		return server.getNumUsers();
-	}
-
-	public int getNumGroups() {
-		return server.getNumGroups();
 	}
 
 	public void addToGroups(String group) {
@@ -315,7 +300,12 @@ public class User extends BaseUser {
 			}
 		}
 		else if(recv.getCommand() == Command.readlog){
-			server.readlog(username);
+			try {
+				server.readlog(username);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		else if (recv.getCommand() == Command.join)
 			server.joinGroup(this, recv.getGname());

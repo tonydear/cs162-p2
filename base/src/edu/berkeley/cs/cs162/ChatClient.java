@@ -377,6 +377,7 @@ public class ChatClient extends Thread{
 				throw new Exception("invalid arguments for readlog command");
 			readlog();
 		}
+		
 		else {
 			throw new Exception("invalid command");
 		}

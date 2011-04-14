@@ -16,9 +16,9 @@ public class LogInAndOutTask implements Runnable {
 		while (true) {
 			String userin = "random" + String.valueOf(rand.nextInt(500));
 			if (server.login(userin) == LoginError.USER_ACCEPTED)
-				System.out.println(userin + " logged in! Total users = " + server.getUsers().size());
+				System.out.println(userin + " logged in! Total users = " + server.getActiveUsers().size());
 			else
-				System.out.println(userin + " rejected! Total users = " + server.getUsers().size());
+				System.out.println(userin + " rejected! Total users = " + server.getActiveUsers().size());
 			
 			String userout = "random" + String.valueOf(rand.nextInt(500));
 			if (server.logoff(userout))

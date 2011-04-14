@@ -213,10 +213,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	public void readlog(String username) throws SQLException{
+		lock.readLock().lock();
 		List<Message> unsentMessages = DBHandler.readAndClearLog(username);
 		for (Message message : unsentMessages) {
 			users.get(username).acceptMsg(message);
 		}
+		lock.readLock().unlock();
 	}
 	
 	@Override
@@ -581,7 +583,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 						Command type = recObject.getCommand();
 						if (type == Command.login) {
 							String username = recObject.getUsername();
-							LoginError loginError = login(username);
+							String password = recObject.getPassword();
+							LoginError loginError = login(username,password);
 							TransportObject sendObject;
 							if (loginError == LoginError.USER_ACCEPTED) {
 								sendObject = new TransportObject(Command.login, ServerReply.OK);

@@ -54,23 +54,26 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
+	private MessageDigest md;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
 		groups = new HashMap<String, ChatGroup>();
 		onlineNames = new HashSet<String>();
+		registeredUsers = new HashSet<String>();
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public ChatServer(int port) throws IOException {
-		users = new HashMap<String, User>();
-		groups = new HashMap<String, ChatGroup>();
-		onlineNames = new HashSet<String>();
-		lock = new ReentrantReadWriteLock(true);
-		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
-		isDown = false;
+		this();
 		pool = Executors.newFixedThreadPool(1000);
 		try {
 			mySocket = new ServerSocket(port);
@@ -201,10 +204,14 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		}
 		String salt = bytes.toString();
 		String hash = hashPassword(password, salt);
+
+		System.out.println("creating salt: " + salt + "hash: " + hash);
+		
 		try {
 			DBHandler.addUser(username, salt, hash);
 		} catch(Exception e) {
 			lock.writeLock().unlock();
+			e.printStackTrace();
 			return ServerReply.REJECTED;
 		}
 		registeredUsers.add(username);
@@ -226,12 +233,13 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	
 	public LoginError login(String username, String password) {
 		lock.writeLock().lock();
+		System.out.println("loggedin got called");
 		if (isDown || onlineNames.contains(username) || !registeredUsers.contains(username)) {
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
-		
+		System.out.println("logged in passed rejected");
 		LoginError error = loginAttempt(username, password);
 		lock.writeLock().unlock();
 		return error;
@@ -241,7 +249,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		String salt;
 		try {
 			salt = DBHandler.getSalt(username);
+			
 			String hash = hashPassword(password, salt);
+			System.out.println(salt + ":salt hash:" + hash);
 			if (hash == null || !hash.equals(DBHandler.getHashedPassword(username))) {
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 				return LoginError.USER_REJECTED;			
@@ -272,7 +282,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	public String hashPassword(String password, String salt) {
 		String hashed = null;
 		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			MessageDigest md = MessageDigest.getInstance("MD5");
 			String toHash = password + salt;
 			md.update(toHash.getBytes());
 		    MessageDigest tc1 = (MessageDigest) md.clone();
@@ -579,12 +589,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 						return null;
 					}
 					if (recObject != null) {
-						
 						Command type = recObject.getCommand();
 						if (type == Command.login) {
 							String username = recObject.getUsername();
 							String password = recObject.getPassword();
 							LoginError loginError = login(username,password);
+							System.out.println("called login: " + loginError);
 							TransportObject sendObject;
 							if (loginError == LoginError.USER_ACCEPTED) {
 								sendObject = new TransportObject(Command.login, ServerReply.OK);
@@ -601,7 +611,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 									newUser.setSocket(socket, received, sent);
 							} else if (loginError == LoginError.USER_DROPPED || loginError == LoginError.USER_REJECTED){
 								sendObject = new TransportObject(Command.login, ServerReply.REJECTED);
-								
 								recObject = null;
 							} else {
 								sendObject = new TransportObject(ServerReply.error);
@@ -622,6 +631,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
+							recObject = null;
 						}
 					}
 		    	}
@@ -637,7 +647,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		int port = Integer.parseInt(args[0]);
 		ChatServer chatServer = new ChatServer(port);
 		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
-		while(!chatServer.isDown()){
+		/*while(!chatServer.isDown()){
 			String line = commands.readLine();
 			String[] tokens = line.split(" ");
 			if(tokens[0].equals("users")){
@@ -659,6 +669,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			} else if (tokens[0].equals("shutdown")){
 				chatServer.shutdown();
 			}
-		}
+		}*/
 	}
 }

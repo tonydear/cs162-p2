@@ -605,7 +605,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			throw new Exception("Invalid number of args to command");
 		}
 		int port = Integer.parseInt(args[0]);
-		@SuppressWarnings("unused")
 		ChatServer chatServer = new ChatServer(port);
 		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
 		while(!chatServer.isDown()){

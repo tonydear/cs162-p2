@@ -128,4 +128,18 @@ public class DBHandler {
     	Statement stmt = conn.createStatement();
     	return stmt.executeQuery("SELECT * FROM memberships");
     }
+    
+    public static ResultSet getUserMemberships(String u) {
+    	PreparedStatement pstmt = null;
+    	ResultSet rs = null;
+    	try {
+    		pstmt = conn.prepareStatement("SELECT gname FROM memberships WHERE usernames = ?");
+    		pstmt.setString(1, u);
+    		rs = pstmt.executeQuery();
+    		pstmt.close();
+    	}
+    	catch(Exception e) {
+    	}
+    	return rs;
+    }
 }

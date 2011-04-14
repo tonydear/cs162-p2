@@ -214,43 +214,40 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
-		if (users.size() >= MAX_USERS) {		//exceeds capacity
-			User newUser = new User(this, username);
-			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
-				onlineNames.add(username);
-				lock.writeLock().unlock();
-				return LoginError.USER_QUEUED;
-			}
-			else {								//else drop user
-				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
-				lock.writeLock().unlock();
-				return LoginError.USER_DROPPED;				
-			}
-		}
-		return loginSuccess(username, password);
+		
+		LoginError error = loginAttempt(username, password);
+		lock.writeLock().unlock();
+		return error;
 	}
 	
-	public LoginError loginSuccess(String username, String password) {
+	public LoginError loginAttempt(String username, String password) {
 		String salt;
 		try {
 			salt = DBHandler.getSalt(username);
 			String hash = hashPassword(password, salt);
 			if (hash == null || !hash.equals(DBHandler.getHashedPassword(username))) {
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
-				lock.writeLock().unlock();
 				return LoginError.USER_REJECTED;			
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
+		if (users.size() >= MAX_USERS) {		//exceeds capacity
+			User newUser = new User(this, username);
+			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
+				onlineNames.add(username);
+				return LoginError.USER_QUEUED;
+			}
+			else {								//else drop user
+				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_DROPPED);
+				return LoginError.USER_DROPPED;				
+			}
+		}
 		User newUser = new User(this, username);
 		users.put(username, newUser);
 		onlineNames.add(username);
-		registeredUsers.add(username);
 		newUser.connected();
 		TestChatServer.logUserLogin(username, new Date());
-		lock.writeLock().unlock();
 		return LoginError.USER_ACCEPTED;		
 	}
 	

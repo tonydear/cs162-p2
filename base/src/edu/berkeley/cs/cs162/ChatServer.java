@@ -1,8 +1,10 @@
 package edu.berkeley.cs.cs162;
 
 
+import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
@@ -74,6 +76,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		this.start();
 	}
 	
+	public boolean isDown() { return isDown;}
+	
 	@Override
 	public BaseUser getUser(String username) {
 		BaseUser u;
@@ -99,7 +103,15 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return groupNames;
 	}
 	
-	public Set<String> getUsers() {
+	public Set<String> getUsers() { //needs to fix
+		Set<String> userNames;
+		lock.readLock().lock();
+		userNames = users.keySet();
+		lock.readLock().unlock();
+		return userNames;
+	}
+	
+	public Set<String> getActiveUsers() {
 		Set<String> userNames;
 		lock.readLock().lock();
 		userNames = users.keySet();
@@ -506,5 +518,29 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		int port = Integer.parseInt(args[0]);
 		@SuppressWarnings("unused")
 		ChatServer chatServer = new ChatServer(port);
+		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
+		while(!chatServer.isDown()){
+			String line = commands.readLine();
+			String[] tokens = line.split(" ");
+			if(tokens[0].equals("users")){
+				if(tokens.length==1) // get users
+					System.out.println(chatServer.getUsers());
+				else { // get users from a specific group
+					ChatGroup group = chatServer.getGroup(tokens[1]);
+					if(group==null)
+						System.out.println("no such group: " + tokens[1]);
+					else{
+						Map<String,User> userList = group.getUserList();
+						System.out.println(userList.keySet());
+					}
+				}
+			} else if(tokens[0].equals("groups")){
+				System.out.println(chatServer.getGroups());
+			} else if (tokens[0].equals("active-users")){
+				System.out.println(chatServer.getActiveUsers());
+			} else if (tokens[0].equals("shutdown")){
+				chatServer.shutdown();
+			}
+		}
 	}
 }

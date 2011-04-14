@@ -11,6 +11,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.sql.ResultSet;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -165,8 +169,30 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		return num;
 	}
 	
-	public ServerReply adduser(String username, String password){
-		return ServerReply.NONE;
+	public ServerReply addUser(String username, String password){
+		Set<String> allNames = new HashSet<String>();
+		allNames.addAll(onlineNames);
+		allNames.addAll(registeredUsers);
+		if(allNames.contains(username))
+			return ServerReply.REJECTED;
+		SecureRandom random = null;
+		byte bytes[] = null;
+		try {
+			random = SecureRandom.getInstance("SHA1PRNG");
+			bytes = new byte[100];
+			random.nextBytes(bytes);
+		} catch (NoSuchAlgorithmException e1) {
+			// TODO Auto-generated catch block
+			System.err.println("no PRNG algorithm");
+		}
+		String salt = bytes.toString();
+		String hash = hashPassword(password, salt);
+		try {
+			DBHandler.addUser(username, salt, hash);
+		} catch(Exception e) {
+			return ServerReply.REJECTED;
+		}
+		return ServerReply.OK;
 	}
 	
 	public void readlog(String username){
@@ -174,21 +200,17 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	@Override
+	public LoginError login(String username) { return null; }
+	
 	public LoginError login(String username, String password) {
 		lock.writeLock().lock();
-		User newUser;
-		if (isDown){
-			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
-			lock.writeLock().unlock();
-			return LoginError.USER_REJECTED;
-		}
-		if (onlineNames.contains(username)) {
+		if (isDown || onlineNames.contains(username) || !registeredUsers.contains(username)) {
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
-			newUser = new User(this, username);
+			User newUser = new User(this, username);
 			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
 				onlineNames.add(username);
 				lock.writeLock().unlock();
@@ -200,25 +222,45 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				return LoginError.USER_DROPPED;				
 			}
 		}
-		loginSuccess(username, password);
+		return loginSuccess(username, password);
 	}
 	
 	public LoginError loginSuccess(String username, String password) {
-		newUser = new User(this, username);
+		String salt;
+		try {
+			salt = DBHandler.getSalt(username);
+			String hash = hashPassword(password, salt);
+			if (hash == null || !hash.equals(DBHandler.getHashedPassword(username))) {
+				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
+				lock.writeLock().unlock();
+				return LoginError.USER_REJECTED;			
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		User newUser = new User(this, username);
 		users.put(username, newUser);
 		onlineNames.add(username);
-		DBHandler.addUser(username, salt, hash);
-		newUser.connected();
-		TestChatServer.logUserLogin(username, new Date());
-		lock.writeLock().unlock();
-		return LoginError.USER_ACCEPTED;		newUser = new User(this, username);
-		users.put(username, newUser);
-		onlineNames.add(username);
-		DBHandler.addUser(username, salt, hash);
+		registeredUsers.add(username);
 		newUser.connected();
 		TestChatServer.logUserLogin(username, new Date());
 		lock.writeLock().unlock();
 		return LoginError.USER_ACCEPTED;		
+	}
+	
+	public String hashPassword(String password, String salt) {
+		String hashed = null;
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			String toHash = password + salt;
+			md.update(toHash.getBytes());
+		    MessageDigest tc1 = (MessageDigest) md.clone();
+		    hashed = tc1.digest().toString();
+		} catch (Exception e) {
+			System.err.println("oops");
+		}
+	    return hashed;
 	}
 
 	@Override

@@ -53,6 +53,7 @@ public class ChatGroup {
 			return false;
 		loggedInUsers.put(user, (User)userObj);			//add user to hashmap
 		userList.add(user);
+		DBHandler.addToGroup(user,name);
 		return true;
 	}
 	
@@ -61,6 +62,7 @@ public class ChatGroup {
 		if(!loggedInUsers.containsKey(user))			//user was not registered with group
 			return false;
 		loggedInUsers.remove(user);					//remove user from hashmap
+		DBHandler.removeFromGroup(user,name);
 		return true;
 	}
 	

@@ -583,7 +583,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 						Command type = recObject.getCommand();
 						if (type == Command.login) {
 							String username = recObject.getUsername();
-							LoginError loginError = login(username);
+							String password = recObject.getPassword();
+							LoginError loginError = login(username,password);
 							TransportObject sendObject;
 							if (loginError == LoginError.USER_ACCEPTED) {
 								sendObject = new TransportObject(Command.login, ServerReply.OK);

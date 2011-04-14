@@ -196,6 +196,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch(Exception e) {
 			return ServerReply.REJECTED;
 		}
+		registeredUsers.add(username);
 		return ServerReply.OK;
 	}
 	

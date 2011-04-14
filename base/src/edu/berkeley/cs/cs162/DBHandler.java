@@ -1,4 +1,5 @@
 package edu.berkeley.cs.cs162;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -9,6 +10,7 @@ import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import sun.misc.*;
 
 
 public class DBHandler {
@@ -83,21 +85,44 @@ public class DBHandler {
     	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO users (username, salt, encrypted_password) VALUES (?,?,?)");
     	if(pstmt == null) return;
     	pstmt.setString(1, username);
-    	pstmt.setBytes(2, salt);
+    	pstmt.setString(2, byteToBase64(salt));
     	
     	pstmt.setString(3, hashedPassword);
     	pstmt.executeUpdate();
     }
     
-    public static byte[] getSalt(String username) throws SQLException {
+    public static byte[] getSalt(String username) throws SQLException, IOException {
     	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
     	if(pstmt == null) return null;
     	pstmt.setString(1, username);
     	ResultSet rs = pstmt.executeQuery();
     	rs.next();
-    	byte[] salt = rs.getBytes("salt");
-    	return salt;
+    	String salt = rs.getString("salt");
     	
+    	return base64ToByte(salt);
+    	
+    }
+    
+    /**
+     * From a base 64 representation, returns the corresponding byte[] 
+     * @param data String The base64 representation
+     * @return byte[]
+     * @throws IOException
+     */
+    public static byte[] base64ToByte(String data) throws IOException {
+        BASE64Decoder decoder = new BASE64Decoder();
+        return decoder.decodeBuffer(data);
+    }
+  
+    /**
+     * From a byte[] returns a base 64 representation
+     * @param data byte[]
+     * @return String
+     * @throws IOException
+     */
+    public static String byteToBase64(byte[] data){
+        BASE64Encoder endecoder = new BASE64Encoder();
+        return endecoder.encode(data);
     }
     
     public static void removeFromGroup(String uname, String gname) throws SQLException{

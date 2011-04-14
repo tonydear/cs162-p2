@@ -80,9 +80,12 @@ public class DBHandler {
     }
     
     public static void addUser(String username, String salt, String hashedPassword) throws SQLException {
-    	Statement stmt = conn.createStatement();
-    	stmt.executeQuery("INSERT INTO users (username, salt, encrypted_password) VALUES + (" + username + "," + salt +"," + hashedPassword + ")");
-    	
+    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO users (username, salt, encrypted_password) VALUES + (?,?,?)");
+    	if(pstmt == null) return;
+    	pstmt.setString(1, username);
+    	pstmt.setString(2, salt);
+    	pstmt.setString(3, hashedPassword);
+    	pstmt.executeUpdate();
     }
     
     public static String getSalt(String username) throws SQLException {

@@ -56,7 +56,7 @@ public class DBHandler {
     	pstmt.executeUpdate();
     }
     
-    public static List<Message> readLog(String uname) throws SQLException{
+    public static List<Message> readAndClearLog(String uname) throws SQLException{
     	List<Message> messages = new ArrayList<Message>();
     	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = ?");
     	if(pstmt==null) return null;
@@ -72,7 +72,8 @@ public class DBHandler {
     		msg.setSQN(sqn);
     		messages.add(msg);
     	}
-    	
+    	pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = ?");
+    	pstmt.executeQuery("DELETE FROM messages WHERE sender = " + uname);
     	return messages;
     }
     

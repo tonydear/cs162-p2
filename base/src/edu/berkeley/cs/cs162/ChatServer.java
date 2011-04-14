@@ -10,6 +10,9 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -145,21 +148,17 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	@Override
+	public LoginError login(String username) { return null; }
+	
 	public LoginError login(String username, String password) {
 		lock.writeLock().lock();
-		User newUser;
-		if (isDown){
-			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
-			lock.writeLock().unlock();
-			return LoginError.USER_REJECTED;
-		}
-		if (onlineNames.contains(username)) {
+		if (isDown || onlineNames.contains(username) || !registeredUsers.contains(username)) {
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
 		if (users.size() >= MAX_USERS) {		//exceeds capacity
-			newUser = new User(this, username);
+			User newUser = new User(this, username);
 			if(waiting_users.offer(newUser)) {	//attempt to add to waiting queue 
 				onlineNames.add(username);
 				lock.writeLock().unlock();
@@ -171,25 +170,45 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				return LoginError.USER_DROPPED;				
 			}
 		}
-		loginSuccess(username, password);
+		return loginSuccess(username, password);
 	}
 	
 	public LoginError loginSuccess(String username, String password) {
-		newUser = new User(this, username);
+		String salt;
+		try {
+			salt = DBHandler.getSalt(username);
+			String hash = hashPassword(password, salt);
+			if (hash == null || !hash.equals(DBHandler.getHashedPassword(username))) {
+				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
+				lock.writeLock().unlock();
+				return LoginError.USER_REJECTED;			
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		User newUser = new User(this, username);
 		users.put(username, newUser);
 		onlineNames.add(username);
-		DBHandler.addUser(username, salt, hash);
-		newUser.connected();
-		TestChatServer.logUserLogin(username, new Date());
-		lock.writeLock().unlock();
-		return LoginError.USER_ACCEPTED;		newUser = new User(this, username);
-		users.put(username, newUser);
-		onlineNames.add(username);
-		DBHandler.addUser(username, salt, hash);
+		registeredUsers.add(username);
 		newUser.connected();
 		TestChatServer.logUserLogin(username, new Date());
 		lock.writeLock().unlock();
 		return LoginError.USER_ACCEPTED;		
+	}
+	
+	public String hashPassword(String password, String salt) {
+		String hashed = null;
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			String toHash = password + salt;
+			md.update(toHash.getBytes());
+		    MessageDigest tc1 = (MessageDigest) md.clone();
+		    hashed = tc1.digest().toString();
+		} catch (Exception e) {
+			System.err.println("oops");
+		}
+	    return hashed;
 	}
 
 	@Override

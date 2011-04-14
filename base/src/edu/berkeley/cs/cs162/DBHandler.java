@@ -93,8 +93,17 @@ public class DBHandler {
     	
     }
     
-    public static void removeFromGroup(String uname, String gname) {
-    	
+    public static void removeFromGroup(String uname, String gname) throws SQLException{
+        	PreparedStatement pstmt = null;
+        	try {
+        		pstmt = conn.prepareStatement("DELETE FROM memberships WHERE gname = ? AND username = ?");
+        		pstmt.setString(1, gname);
+        		pstmt.setString(2, uname);
+        		pstmt.executeUpdate();
+        	} 
+        	finally {
+        		if(pstmt!=null) pstmt.close();
+        	}
     }
     
     public static String getHashedPassword(String uname) throws SQLException {

@@ -174,11 +174,14 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	public ServerReply addUser(String username, String password){
+		lock.writeLock().lock();
 		Set<String> allNames = new HashSet<String>();
 		allNames.addAll(onlineNames);
 		allNames.addAll(registeredUsers);
-		if(allNames.contains(username))
+		if(allNames.contains(username)) {
+			lock.writeLock().unlock();
 			return ServerReply.REJECTED;
+		}
 		SecureRandom random = null;
 		byte bytes[] = null;
 		try {
@@ -186,7 +189,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			bytes = new byte[100];
 			random.nextBytes(bytes);
 		} catch (NoSuchAlgorithmException e1) {
-			// TODO Auto-generated catch block
 			System.err.println("no PRNG algorithm");
 		}
 		String salt = bytes.toString();
@@ -194,9 +196,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		try {
 			DBHandler.addUser(username, salt, hash);
 		} catch(Exception e) {
+			lock.writeLock().unlock();
 			return ServerReply.REJECTED;
 		}
 		registeredUsers.add(username);
+		lock.writeLock().unlock();
 		return ServerReply.OK;
 	}
 	

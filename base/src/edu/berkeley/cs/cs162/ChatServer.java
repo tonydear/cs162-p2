@@ -662,14 +662,24 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					if(group==null)
 						System.out.println("no such group: " + tokens[1]);
 					else{
-						Map<String,User> userList = group.getUserList();
-						System.out.println(userList.keySet());
+						Set<String> userList = group.getAllUsers();
+						System.out.println(userList);
 					}
 				}
 			} else if(tokens[0].equals("groups")){
 				System.out.println(chatServer.getGroups());
 			} else if (tokens[0].equals("active-users")){
-				System.out.println(chatServer.getActiveUsers());
+				if(tokens.length==1) // get logged in users
+					System.out.println(chatServer.getActiveUsers());
+				else { // get logged in users from a specific group
+					ChatGroup group = chatServer.getGroup(tokens[1]);
+					if(group==null)
+						System.out.println("no such group: " + tokens[1]);
+					else{
+						Map<String,User> userList = group.getUserList();
+						System.out.println(userList.keySet());
+					}
+				}
 			} else if (tokens[0].equals("shutdown")){
 				chatServer.shutdown();
 			}

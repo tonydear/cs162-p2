@@ -168,7 +168,7 @@ public class DBHandler {
     	PreparedStatement pstmt = null;
     	ResultSet rs = null;
     	try {
-    		pstmt = conn.prepareStatement("SELECT gname FROM memberships WHERE usernames = ?");
+    		pstmt = conn.prepareStatement("SELECT gname FROM memberships WHERE username = ?");
     		pstmt.setString(1, u);
     		rs = pstmt.executeQuery();
     		pstmt.close();

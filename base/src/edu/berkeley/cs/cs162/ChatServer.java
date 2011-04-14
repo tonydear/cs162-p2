@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -140,14 +141,21 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	public ServerReply addUser(String username, String password){
-		Set allNames = new HashSet<String>();
+		Set<String> allNames = new HashSet<String>();
 		allNames.addAll(onlineNames);
 		allNames.addAll(registeredUsers);
 		if(allNames.contains(username))
 			return ServerReply.REJECTED;
-		SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-		byte bytes[] = new byte[100];
-		random.nextBytes(bytes);
+		SecureRandom random = null;
+		byte bytes[] = null;
+		try {
+			random = SecureRandom.getInstance("SHA1PRNG");
+			bytes = new byte[100];
+			random.nextBytes(bytes);
+		} catch (NoSuchAlgorithmException e1) {
+			// TODO Auto-generated catch block
+			System.err.println("no PRNG algorithm");
+		}
 		String salt = bytes.toString();
 		String hash = hashPassword(password, salt);
 		try {

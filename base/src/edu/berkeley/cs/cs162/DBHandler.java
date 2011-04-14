@@ -75,8 +75,9 @@ public class DBHandler {
     		msg.setSQN(sqn);
     		messages.add(msg);
     	}
-    	pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = ?");
-    	pstmt.executeQuery("DELETE FROM messages WHERE sender = " + uname);
+    	pstmt = conn.prepareStatement("DELETE FROM messages WHERE sender = ?");
+    	pstmt.setString(1, uname);
+    	pstmt.executeUpdate();
     	return messages;
     }
     
@@ -171,8 +172,6 @@ public class DBHandler {
     		pstmt = conn.prepareStatement("SELECT gname FROM memberships WHERE username = ?");
     		pstmt.setString(1, u);
     		rs = pstmt.executeQuery();
-    		System.out.println(rs);
-    		pstmt.close();
     	}
     	catch(Exception e) {
     		e.printStackTrace();

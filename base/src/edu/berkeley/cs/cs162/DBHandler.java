@@ -111,8 +111,10 @@ public class DBHandler {
     }
     
     public static String getHashedPassword(String uname) throws SQLException {
-    	Statement stmt = conn.createStatement();
-    	ResultSet rs = stmt.executeQuery("SELECT * FROM users WHERE username = " + uname);
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
+    	if(pstmt == null) return null;
+    	pstmt.setString(1, uname);
+    	ResultSet rs = pstmt.executeQuery();
     	rs.next();
     	String hashedPassword = rs.getString("encrypted_password");
     	return hashedPassword;

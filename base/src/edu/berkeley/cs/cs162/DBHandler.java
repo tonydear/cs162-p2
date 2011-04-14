@@ -191,4 +191,16 @@ public class DBHandler {
     		if(pstmt!=null) pstmt.close();
     	}		
 	}
+	
+	public static void addGroup(String gname) throws SQLException {
+		PreparedStatement pstmt = null;
+    	try {
+    		pstmt = conn.prepareStatement("INSERT INTO groups (gname) VALUES (?)");
+    		pstmt.setString(1, gname);
+    		pstmt.executeUpdate();
+    	} 
+    	finally {
+    		if(pstmt!=null) pstmt.close();
+    	}		
+	}
 }

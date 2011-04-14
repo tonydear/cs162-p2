@@ -434,19 +434,27 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		Message message = new Message(timestamp, source, dest, msg);
 		message.setSQN(sqn);
 		lock.readLock().lock();
-		if (users.containsKey(source)) {
+		if (users.containsKey(source)) {				//Valid destination user
 			if (users.containsKey(dest)) {
 				User destUser = users.get(dest);
 				destUser.acceptMsg(message);
-			} else if (groups.containsKey(dest)) {
+			}
+			else if (registeredUsers.contains(dest)) {	//Registered offline user
+				try {
+					DBHandler.writeLog(message, dest);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			else if (groups.containsKey(dest)) {		//Group destination
 				message.setIsFromGroup();
 				ChatGroup group = groups.get(dest);
 				MsgSendError sendError = group.forwardMessage(message);
-				if (sendError==MsgSendError.NOT_IN_GROUP) {
+				if (sendError == MsgSendError.NOT_IN_GROUP) {
 					TestChatServer.logChatServerDropMsg(message.toString(), new Date());
 					lock.readLock().unlock();
 					return sendError;
-				} else if(sendError==MsgSendError.MESSAGE_FAILED){
+				} else if(sendError == MsgSendError.MESSAGE_FAILED){
 					lock.readLock().unlock();
 					return sendError;
 				}

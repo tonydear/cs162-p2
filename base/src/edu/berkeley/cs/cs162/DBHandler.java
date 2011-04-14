@@ -89,8 +89,10 @@ public class DBHandler {
     }
     
     public static String getSalt(String username) throws SQLException {
-    	Statement stmt = conn.createStatement();
-    	ResultSet rs = stmt.executeQuery("SELECT * FROM users WHERE username = " + username);
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
+    	if(pstmt == null) return null;
+    	pstmt.setString(1, username);
+    	ResultSet rs = pstmt.executeQuery();
     	rs.next();
     	String salt = rs.getString("salt");
     	return salt;

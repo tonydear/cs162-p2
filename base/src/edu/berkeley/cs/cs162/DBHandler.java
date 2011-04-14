@@ -80,28 +80,52 @@ public class DBHandler {
     
     public static void addUser(String username, String salt, String hashedPassword) throws SQLException {
     	Statement stmt = conn.createStatement();
-    	stmt.executeQuery("INSERT into  users (username, salt, encrypted_password) VALUES + (" + username + "," + salt +"," + hashedPassword + ")");
+    	stmt.executeQuery("INSERT INTO users (username, salt, encrypted_password) VALUES + (" + username + "," + salt +"," + hashedPassword + ")");
     	
     }
     
     public static String getSalt(String username) throws SQLException {
     	Statement stmt = conn.createStatement();
-    	ResultSet rs = stmt.executeQuery("SELECT * FROM users where username = " + username);
+    	ResultSet rs = stmt.executeQuery("SELECT * FROM users WHERE username = " + username);
     	rs.next();
     	String salt = rs.getString("salt");
     	return salt;
     	
     }
     
-    public static void removeFromGroup(String uname, String gname) {
-    	
+    public static void removeFromGroup(String uname, String gname) throws SQLException{
+        	PreparedStatement pstmt = null;
+        	try {
+        		pstmt = conn.prepareStatement("DELETE FROM memberships WHERE gname = ? AND username = ?");
+        		pstmt.setString(1, gname);
+        		pstmt.setString(2, uname);
+        		pstmt.executeUpdate();
+        	} 
+        	finally {
+        		if(pstmt!=null) pstmt.close();
+        	}
     }
     
     public static String getHashedPassword(String uname) throws SQLException {
     	Statement stmt = conn.createStatement();
-    	ResultSet rs = stmt.executeQuery("SELECT * FROM users where username = " + uname);
+    	ResultSet rs = stmt.executeQuery("SELECT * FROM users WHERE username = " + uname);
     	rs.next();
     	String hashedPassword = rs.getString("encrypted_password");
     	return hashedPassword;
+    }
+    
+    public static ResultSet getUsers() throws SQLException {
+    	Statement stmt = conn.createStatement();
+    	return stmt.executeQuery("SELECT username FROM users");
+    }
+    
+    public static ResultSet getGroups() throws SQLException {
+    	Statement stmt = conn.createStatement();
+    	return stmt.executeQuery("SELECT gname FROM groups");
+    }
+    
+    public static ResultSet getMemberships() throws SQLException {
+    	Statement stmt = conn.createStatement();
+    	return stmt.executeQuery("SELECT * FROM memberships");
     }
 }

@@ -45,10 +45,23 @@ public class DBHandler {
     	}
     }
     
+    public static void writeLog(Message msg, String recipient) throws SQLException{
+    	PreparedStatement pstmt = null;
+    	pstmt = conn.prepareStatement("INSERT INTO messages (sender, sqn, timestamp, destination, message, recipient) " + 
+    			"VALUES (?,?,?,?,?,?)");
+    	pstmt.setString(1, msg.getSource());
+    	pstmt.setInt(2, msg.getSQN());
+    	long time = Long.parseLong(msg.getTimestamp());
+    	pstmt.setTime(3,new Time(time));
+    	pstmt.setString(4, msg.getDest());
+    	pstmt.setString(5, msg.getContent());
+    	pstmt.setString(6, recipient);
+    	pstmt.executeUpdate();
+    }
+    
     public static List<Message> readLog(String uname) throws SQLException{
     	List<Message> messages = new ArrayList<Message>();
-    	PreparedStatement pstmt = conn.prepareStatement("SELECT sender, sqn, timestamp, destination, message" +
-    	"FROM messages WHERE recipient = ?");
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = " + uname);
     	if(pstmt==null) return null;
     	ResultSet rs = pstmt.executeQuery();
     	while(rs.next()){

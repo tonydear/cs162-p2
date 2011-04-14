@@ -2,24 +2,36 @@ package edu.berkeley.cs.cs162;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 public class ChatGroup {
 	private String name;
-	private HashMap<String, User> userlist;
+	private Set<String> userList;
+	private HashMap<String, User> loggedInUsers;
 	private final static int MAX_USERS = 10;
 	
 	ChatGroup(String initname) {
 		name = initname;
-		userlist = new HashMap<String, User>();
+		userList = new HashSet<String>();
+		loggedInUsers = new HashMap<String, User>();
+	}
+	
+	public Set<String> getAllUsers() {
+		return userList;
+	}
+	
+	public void addUser(String uname){
+		userList.add(uname);
 	}
 	
 	public HashMap<String, User> getUserList() {
-		return userlist;
+		return loggedInUsers;
 	}
 	
 	public int getNumUsers() {
-		return userlist.size();
+		return loggedInUsers.size();
 	}
 	
 	public String getName() {
@@ -35,27 +47,29 @@ public class ChatGroup {
 	}
 	
 	public boolean joinGroup(String user, BaseUser userObj) {
-		if(userlist.containsKey(user))			//user already in group
+		if(loggedInUsers.containsKey(user))			//user already in group
 			return false;
-		if(userlist.size() + 1 > MAX_USERS)		//adding user would exceed capacity
+		if(loggedInUsers.size() + 1 > MAX_USERS)		//adding user would exceed capacity
 			return false;
-		userlist.put(user, (User)userObj);			//add user to hashmap
-		//DBHandler.addToGroup(user,name);
+		loggedInUsers.put(user, (User)userObj);			//add user to hashmap
+		userList.add(user);
+		DBHandler.addToGroup(user,name);
 		return true;
 	}
 	
 	public boolean leaveGroup(String user) {
-		if(!userlist.containsKey(user))			//user was not registered with group
+		userList.remove(user);
+		if(!loggedInUsers.containsKey(user))			//user was not registered with group
 			return false;
-		userlist.remove(user);					//remove user from hashmap
-		//DBHandler.removeFromGroup(user,name);
+		loggedInUsers.remove(user);					//remove user from hashmap
+		DBHandler.removeFromGroup(user,name);
 		return true;
 	}
 	
 	public synchronized MsgSendError forwardMessage(Message msg) {
-		if (! userlist.containsKey(msg.getSource()))
+		if (! loggedInUsers.containsKey(msg.getSource()))
 			return MsgSendError.NOT_IN_GROUP;
-		Collection<User> users = userlist.values();
+		Collection<User> users = loggedInUsers.values();
 		Iterator<User> it = users.iterator();
 		User user;
 		boolean success = true;

@@ -10,6 +10,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.sql.ResultSet;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -62,6 +63,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
+		initStructures();
 		
 	}
 	
@@ -78,7 +80,34 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
+		initStructures();
 		this.start();
+	}
+	
+	private void initStructures() {
+		//initialize registeredUsers
+		ResultSet Usernames = DBHandler.getUsers();
+		while(Usernames.next()) {
+			String s = Usernames.getString("username");
+			registeredUsers.add(s);
+		}
+		
+		//initialize groups as well as add group names to onlineNames
+		ResultSet Groupnames = DBHandler.getGroups();
+		while(Groupnames.next()) {
+			String g = Groupnames.getString("gname");
+			onlineNames.add(g);
+			groups.put(g, new ChatGroup(g));
+		}
+		
+		ResultSet Members = DBHandler.getMemberships();
+		while(Members.next()) {
+			String u = Members.getString("username"); 
+			String g = Members.getString("gname");
+			ChatGroup group = groups.get(g);
+			if(group != null)
+				group.addUser(u);
+		}
 	}
 	
 	public boolean isDown() { return isDown;}

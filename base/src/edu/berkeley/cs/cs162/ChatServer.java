@@ -174,11 +174,14 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	public ServerReply addUser(String username, String password){
+		lock.writeLock().lock();
 		Set<String> allNames = new HashSet<String>();
 		allNames.addAll(onlineNames);
 		allNames.addAll(registeredUsers);
-		if(allNames.contains(username))
+		if(allNames.contains(username)) {
+			lock.writeLock().unlock();
 			return ServerReply.REJECTED;
+		}
 		SecureRandom random = null;
 		byte bytes[] = null;
 		try {
@@ -186,7 +189,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			bytes = new byte[100];
 			random.nextBytes(bytes);
 		} catch (NoSuchAlgorithmException e1) {
-			// TODO Auto-generated catch block
 			System.err.println("no PRNG algorithm");
 		}
 		String salt = bytes.toString();
@@ -194,9 +196,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		try {
 			DBHandler.addUser(username, salt, hash);
 		} catch(Exception e) {
+			lock.writeLock().unlock();
 			return ServerReply.REJECTED;
 		}
 		registeredUsers.add(username);
+		lock.writeLock().unlock();
 		return ServerReply.OK;
 	}
 	
@@ -401,6 +405,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(group.getNumUsers() <= 0) { 
 				groups.remove(group.getName()); 
 				onlineNames.remove(group.getName());
+				try {
+					DBHandler.removeGroup(groupname);
+				} catch (SQLException e) {
+					System.err.println("unsuccessful group removal from database");
+				}
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());
@@ -431,19 +440,27 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		Message message = new Message(timestamp, source, dest, msg);
 		message.setSQN(sqn);
 		lock.readLock().lock();
-		if (users.containsKey(source)) {
+		if (users.containsKey(source)) {				//Valid destination user
 			if (users.containsKey(dest)) {
 				User destUser = users.get(dest);
 				destUser.acceptMsg(message);
-			} else if (groups.containsKey(dest)) {
+			}
+			else if (registeredUsers.contains(dest)) {	//Registered offline user
+				try {
+					DBHandler.writeLog(message, dest);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			else if (groups.containsKey(dest)) {		//Group destination
 				message.setIsFromGroup();
 				ChatGroup group = groups.get(dest);
 				MsgSendError sendError = group.forwardMessage(message);
-				if (sendError==MsgSendError.NOT_IN_GROUP) {
+				if (sendError == MsgSendError.NOT_IN_GROUP) {
 					TestChatServer.logChatServerDropMsg(message.toString(), new Date());
 					lock.readLock().unlock();
 					return sendError;
-				} else if(sendError==MsgSendError.MESSAGE_FAILED){
+				} else if(sendError == MsgSendError.MESSAGE_FAILED){
 					lock.readLock().unlock();
 					return sendError;
 				}
@@ -602,7 +619,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			throw new Exception("Invalid number of args to command");
 		}
 		int port = Integer.parseInt(args[0]);
-		@SuppressWarnings("unused")
 		ChatServer chatServer = new ChatServer(port);
 		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
 		while(!chatServer.isDown()){

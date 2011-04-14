@@ -8,9 +8,6 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Properties;
 
 
@@ -61,8 +58,9 @@ public class DBHandler {
     
     public static List<Message> readLog(String uname) throws SQLException{
     	List<Message> messages = new ArrayList<Message>();
-    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = " + uname);
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = ?");
     	if(pstmt==null) return null;
+    	pstmt.setString(1, uname);
     	ResultSet rs = pstmt.executeQuery();
     	while(rs.next()){
     		String sender = rs.getString("sender");
@@ -79,14 +77,19 @@ public class DBHandler {
     }
     
     public static void addUser(String username, String salt, String hashedPassword) throws SQLException {
-    	Statement stmt = conn.createStatement();
-    	stmt.executeQuery("INSERT INTO users (username, salt, encrypted_password) VALUES + (" + username + "," + salt +"," + hashedPassword + ")");
-    	
+    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO users (username, salt, encrypted_password) VALUES + (?,?,?)");
+    	if(pstmt == null) return;
+    	pstmt.setString(1, username);
+    	pstmt.setString(2, salt);
+    	pstmt.setString(3, hashedPassword);
+    	pstmt.executeUpdate();
     }
     
     public static String getSalt(String username) throws SQLException {
-    	Statement stmt = conn.createStatement();
-    	ResultSet rs = stmt.executeQuery("SELECT * FROM users WHERE username = " + username);
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
+    	if(pstmt == null) return null;
+    	pstmt.setString(1, username);
+    	ResultSet rs = pstmt.executeQuery();
     	rs.next();
     	String salt = rs.getString("salt");
     	return salt;
@@ -107,8 +110,10 @@ public class DBHandler {
     }
     
     public static String getHashedPassword(String uname) throws SQLException {
-    	Statement stmt = conn.createStatement();
-    	ResultSet rs = stmt.executeQuery("SELECT * FROM users WHERE username = " + uname);
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
+    	if(pstmt == null) return null;
+    	pstmt.setString(1, uname);
+    	ResultSet rs = pstmt.executeQuery();
     	rs.next();
     	String hashedPassword = rs.getString("encrypted_password");
     	return hashedPassword;
@@ -142,4 +147,16 @@ public class DBHandler {
     	}
     	return rs;
     }
+
+	public static void removeGroup(String gname) throws SQLException {
+		PreparedStatement pstmt = null;
+    	try {
+    		pstmt = conn.prepareStatement("DELETE FROM groups WHERE gname = ?");
+    		pstmt.setString(1, gname);
+    		pstmt.executeUpdate();
+    	} 
+    	finally {
+    		if(pstmt!=null) pstmt.close();
+    	}		
+	}
 }

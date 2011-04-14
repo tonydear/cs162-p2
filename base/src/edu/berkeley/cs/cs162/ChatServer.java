@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,7 +62,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
-		initStructures();
+		//initStructures();
 		
 	}
 	
@@ -80,11 +79,16 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			throw new IOException("Server socket creation failed");
 		}
-		initStructures();
+		try{
+			initStructures();
+		}catch (Exception e){
+			e.printStackTrace();
+			return;
+		}
 		this.start();
 	}
 	
-	private void initStructures() {
+	private void initStructures() throws Exception{
 		//initialize registeredUsers
 		ResultSet Usernames = DBHandler.getUsers();
 		while(Usernames.next()) {
@@ -192,6 +196,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch(Exception e) {
 			return ServerReply.REJECTED;
 		}
+		registeredUsers.add(username);
 		return ServerReply.OK;
 	}
 	
@@ -399,6 +404,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(group.getNumUsers() <= 0) { 
 				groups.remove(group.getName()); 
 				onlineNames.remove(group.getName());
+				try {
+					DBHandler.removeGroup(groupname);
+				} catch (SQLException e) {
+					System.err.println("unsuccessful group removal from database");
+				}
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());
@@ -600,7 +610,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			throw new Exception("Invalid number of args to command");
 		}
 		int port = Integer.parseInt(args[0]);
-		@SuppressWarnings("unused")
 		ChatServer chatServer = new ChatServer(port);
 		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
 		while(!chatServer.isDown()){

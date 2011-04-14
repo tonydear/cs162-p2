@@ -78,11 +78,11 @@ public class DBHandler {
     	return messages;
     }
     
-    public static void addUser(String username, String salt, String hashedPassword) throws SQLException {
+    public static void addUser(String username, byte[] salt, String hashedPassword) throws SQLException {
     	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO users (username, salt, encrypted_password) VALUES + (?,?,?)");
     	if(pstmt == null) return;
     	pstmt.setString(1, username);
-    	pstmt.setString(2, salt);
+    	pstmt.setBytes(2, salt);
     	pstmt.setString(3, hashedPassword);
     	pstmt.executeUpdate();
     }

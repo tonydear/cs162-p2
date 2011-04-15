@@ -547,6 +547,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		
 		public void run() {
 			try {
+				System.out.println("first thread started");
 				List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
@@ -557,7 +558,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			} catch (Exception e){
 				e.printStackTrace();
 			}
-				
+			System.out.println("first thread completed");
 		}
 		
 	}
@@ -582,6 +583,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		    }
 			@Override
 			public Handler call() throws Exception {
+				System.out.println("handler called");
 		    	TransportObject recObject = null;
 		    	while(recObject == null) {
 					try {
@@ -686,6 +688,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				}
 			} else if (tokens[0].equals("shutdown")){
 				chatServer.shutdown();
+			} else if (tokens[0].equals("thread-count")){
+				System.out.println(Thread.activeCount());
 			}
 		}
 	}

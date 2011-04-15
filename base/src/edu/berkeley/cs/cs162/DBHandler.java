@@ -75,7 +75,7 @@ public class DBHandler {
     		msg.setSQN(sqn);
     		messages.add(msg);
     	}
-    	pstmt = conn.prepareStatement("DELETE FROM messages WHERE sender = ?");
+    	pstmt = conn.prepareStatement("DELETE FROM messages WHERE recipient = ?");
     	pstmt.setString(1, uname);
     	pstmt.executeUpdate();
     	return messages;

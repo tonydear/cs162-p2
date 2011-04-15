@@ -165,8 +165,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	private void initUserGroups(User u){
-		ResultSet rs = DBHandler.getUserMemberships(u.getUsername());
+		ResultSet rs;
 		try {
+			rs = DBHandler.getUserMemberships(u.getUsername());
 			System.out.println("initiating " + u.getUsername() + " " + rs);
 			while(rs.next()){
 				ChatGroup group = groups.get(rs.getString("gname"));
@@ -176,9 +177,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				System.out.println(group.getName());
 			}
 			System.out.println("done initiating " + u.getUsername());
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -313,8 +311,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			lock.writeLock().unlock();
 			return false;
 		}
-		ResultSet rs = DBHandler.getUserMemberships(username);
 		try {
+			ResultSet rs = DBHandler.getUserMemberships(username);
 			while(rs.next()) {
 				String g = rs.getString("gname");
 				ChatGroup c = groups.get(g);
@@ -407,15 +405,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			user.addToGroups(groupname);
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
-			if(success){
+			if (success)
 				joinAck(user,groupname,ServerReply.OK_CREATE);
-				try {
-					DBHandler.addGroup(groupname);
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
 			lock.writeLock().unlock();
 			return success;
 		}
@@ -436,20 +427,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			if(group.getAllUsers().size() <= 0) { 
 				groups.remove(group.getName()); 
 				onlineNames.remove(group.getName());
-				try {
-					DBHandler.removeGroup(groupname);
-				} catch (SQLException e) {
-					System.err.println("unsuccessful group removal from database" + e);
-				}
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());
-			String username = user.getUsername();
-			try {
-				DBHandler.removeFromGroup(username, groupname);
-			} catch (SQLException e) {
-				System.err.println("unsuccessful membership deletion in database" + e);
-			}
 			lock.writeLock().unlock();
 			return true;
 		}

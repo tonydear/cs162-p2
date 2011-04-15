@@ -15,8 +15,7 @@ import sun.misc.*;
 
 public class DBHandler {
     private static Connection conn;
-    static {
-    	
+    static {   	
         conn = null;
         Properties connectionProps = new Properties();
         connectionProps.put("user", "group24");
@@ -31,10 +30,21 @@ public class DBHandler {
         }
     }
     
+    public static void addUser(String username, byte[] salt, String hashedPassword) throws SQLException {
+    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO Users (username, salt, encrypted_password) VALUES (?,?,?)");
+    	if(pstmt == null) return;
+    	pstmt.setString(1, username);
+    	System.out.println("about to store salt: " + byteToBase64(salt));
+    	pstmt.setString(2, byteToBase64(salt));
+    	
+    	pstmt.setString(3, hashedPassword);
+    	pstmt.executeUpdate();
+    }
+    
     public static void addToGroup(String uname, String gname) throws SQLException{
     	PreparedStatement pstmt = null;
     	try {
-    		pstmt = conn.prepareStatement("INSERT INTO memberships (gname,username)" +
+    		pstmt = conn.prepareStatement("INSERT INTO Memberships (gname, username)" +
     		" VALUES (?,?)");
     		pstmt.setString(1, gname);
     		pstmt.setString(2, uname);
@@ -47,7 +57,7 @@ public class DBHandler {
     
     public static void writeLog(Message msg, String recipient) throws SQLException{
     	PreparedStatement pstmt = null;
-    	pstmt = conn.prepareStatement("INSERT INTO messages (sender, sqn, timestamp, destination, message, recipient) " + 
+    	pstmt = conn.prepareStatement("INSERT INTO Messages (sender, sqn, timestamp, destination, message, recipient) " + 
     			"VALUES (?,?,?,?,?,?)");
     	pstmt.setString(1, msg.getSource());
     	pstmt.setInt(2, msg.getSQN());
@@ -59,10 +69,23 @@ public class DBHandler {
     	pstmt.executeUpdate();
     }
     
+    public static void removeFromGroup(String uname, String gname) throws SQLException{
+    	PreparedStatement pstmt = null;
+    	try {
+    		pstmt = conn.prepareStatement("DELETE FROM Memberships WHERE gname = ? AND username = ?");
+    		pstmt.setString(1, gname);
+    		pstmt.setString(2, uname);
+    		pstmt.executeUpdate();
+    	} 
+    	finally {
+    		if(pstmt!=null) pstmt.close();
+    	}
+    }
+    
     public static List<Message> readAndClearLog(String uname) throws SQLException{
     	List<Message> messages = new ArrayList<Message>();
-    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM messages WHERE recipient = ?");
-    	if(pstmt==null) return null;
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM Messages WHERE recipient = ?");
+    	if(pstmt == null) return null;
     	pstmt.setString(1, uname);
     	ResultSet rs = pstmt.executeQuery();
     	while(rs.next()){
@@ -79,30 +102,6 @@ public class DBHandler {
     	pstmt.setString(1, uname);
     	pstmt.executeUpdate();
     	return messages;
-    }
-    
-
-    public static void addUser(String username, byte[] salt, String hashedPassword) throws SQLException {
-    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO users (username, salt, encrypted_password) VALUES (?,?,?)");
-    	if(pstmt == null) return;
-    	pstmt.setString(1, username);
-    	System.out.println("about to store salt: " + byteToBase64(salt));
-    	pstmt.setString(2, byteToBase64(salt));
-    	
-    	pstmt.setString(3, hashedPassword);
-    	pstmt.executeUpdate();
-    }
-    
-    public static byte[] getSalt(String username) throws SQLException, IOException {
-    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
-    	if(pstmt == null) return null;
-    	pstmt.setString(1, username);
-    	ResultSet rs = pstmt.executeQuery();
-    	rs.next();
-    	String salt = rs.getString("salt");
-    	System.out.println("just got salt: " + salt);
-    	return base64ToByte(salt);
-    	
     }
     
     /**
@@ -127,21 +126,20 @@ public class DBHandler {
         return endecoder.encode(data);
     }
     
-    public static void removeFromGroup(String uname, String gname) throws SQLException{
-        	PreparedStatement pstmt = null;
-        	try {
-        		pstmt = conn.prepareStatement("DELETE FROM memberships WHERE gname = ? AND username = ?");
-        		pstmt.setString(1, gname);
-        		pstmt.setString(2, uname);
-        		pstmt.executeUpdate();
-        	} 
-        	finally {
-        		if(pstmt!=null) pstmt.close();
-        	}
+    public static byte[] getSalt(String username) throws SQLException, IOException {
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM Users WHERE username = ?");
+    	if(pstmt == null) return null;
+    	pstmt.setString(1, username);
+    	ResultSet rs = pstmt.executeQuery();
+    	rs.next();
+    	String salt = rs.getString("salt");
+    	System.out.println("just got salt: " + salt);
+    	return base64ToByte(salt);
+    	
     }
     
     public static String getHashedPassword(String uname) throws SQLException {
-    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
+    	PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM Users WHERE username = ?");
     	if(pstmt == null) return null;
     	pstmt.setString(1, uname);
     	ResultSet rs = pstmt.executeQuery();
@@ -152,54 +150,25 @@ public class DBHandler {
     
     public static ResultSet getUsers() throws SQLException {
     	Statement stmt = conn.createStatement();
-    	return stmt.executeQuery("SELECT username FROM users");
+    	return stmt.executeQuery("SELECT username FROM Users");
     }
     
     public static ResultSet getGroups() throws SQLException {
     	Statement stmt = conn.createStatement();
-    	return stmt.executeQuery("SELECT gname FROM groups");
+    	return stmt.executeQuery("SELECT DISTINCT(gname) FROM Memberships");
     }
     
     public static ResultSet getMemberships() throws SQLException {
     	Statement stmt = conn.createStatement();
-    	return stmt.executeQuery("SELECT * FROM memberships");
+    	return stmt.executeQuery("SELECT * FROM Memberships");
     }
     
-    public static ResultSet getUserMemberships(String u) {
+    public static ResultSet getUserMemberships(String u) throws SQLException {
     	PreparedStatement pstmt = null;
     	ResultSet rs = null;
-    	try {
-    		pstmt = conn.prepareStatement("SELECT gname FROM memberships WHERE username = ?");
-    		pstmt.setString(1, u);
-    		rs = pstmt.executeQuery();
-    	}
-    	catch(Exception e) {
-    		e.printStackTrace();
-    	}
+    	pstmt = conn.prepareStatement("SELECT gname FROM Memberships WHERE username = ?");
+    	pstmt.setString(1, u);
+    	rs = pstmt.executeQuery();
     	return rs;
     }
-
-	public static void removeGroup(String gname) throws SQLException {
-		PreparedStatement pstmt = null;
-    	try {
-    		pstmt = conn.prepareStatement("DELETE FROM groups WHERE gname = ?");
-    		pstmt.setString(1, gname);
-    		pstmt.executeUpdate();
-    	} 
-    	finally {
-    		if(pstmt!=null) pstmt.close();
-    	}		
-	}
-	
-	public static void addGroup(String gname) throws SQLException {
-		PreparedStatement pstmt = null;
-    	try {
-    		pstmt = conn.prepareStatement("INSERT INTO groups (gname) VALUES (?)");
-    		pstmt.setString(1, gname);
-    		pstmt.executeUpdate();
-    	} 
-    	finally {
-    		if(pstmt!=null) pstmt.close();
-    	}		
-	}
 }

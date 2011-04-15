@@ -97,7 +97,7 @@ public class ChatGroup {
 			String username = it.next();
 			User user = loggedInUsers.get(username);
 			if (user==null) {
-				if (!userList.contains(user)) {
+				if (!userList.contains(username)) {
 					success = false;
 				}
 				else {

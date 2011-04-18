@@ -322,5 +322,10 @@ public class User extends BaseUser {
 		else if (recv.getCommand() == Command.send) {
 			send(recv.getDest(), recv.getMessage(), recv.getSQN());
 		}
+		else if (recv.getCommand() == Command.adduser){
+			ServerReply success = server.addUser(recv.getUsername(), recv.getPassword());
+			TransportObject sendObject = new TransportObject(Command.adduser,success);
+			queueReply(sendObject);
+		}
 	}
 }

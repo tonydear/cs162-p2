@@ -622,6 +622,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 								e.printStackTrace();
 							}
 							recObject = null;
+						} else {
+							recObject = null;
 						}
 					}
 		    	}

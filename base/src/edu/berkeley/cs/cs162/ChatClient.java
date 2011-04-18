@@ -270,7 +270,9 @@ public class ChatClient extends Thread{
 			connected = false;
 			isLoggedIn = false;
 			isQueued = false; //should be already
+			e.printStackTrace();
 		}
+		System.out.println("sent readlog request, connect: " + connected);
 	}
 	
 	public Map<String,ChatLog> getLogs(){

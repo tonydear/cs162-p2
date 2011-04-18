@@ -91,7 +91,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void adduser(String username, String password){
-		if(!connected || isLoggedIn || isQueued)
+		if(!connected)
 			return;
 		TransportObject toSend = new TransportObject(Command.adduser,username,password);
 		try{

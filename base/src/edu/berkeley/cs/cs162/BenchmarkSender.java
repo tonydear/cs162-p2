@@ -20,12 +20,14 @@ public class BenchmarkSender extends AbstractChatClient {
 		try {
 			isWaiting = true;
 			reply = Command.send;
+			benchmarkTimes.put(sqn,System.currentTimeMillis());
 			sent.writeObject(toSend);
+			this.wait();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		benchmarkTimes.put(sqn,System.currentTimeMillis());
-		System.out.println(benchmarkTimes.get(sqn));
+		
+		
 		sendLock.unlock();
 	}
 	
@@ -44,6 +46,10 @@ public class BenchmarkSender extends AbstractChatClient {
 	
 	@Override
 	protected void benchmark(TransportObject object){
+		System.out.println(object.getSQN());
+		if(!benchmarkTimes.containsKey(object.getSQN()))
+			return;
+				
 		long sentTime = benchmarkTimes.get(object.getSQN());
 		benchmarkTimes.remove(object.getSQN());
 		long receivedTime = System.currentTimeMillis();

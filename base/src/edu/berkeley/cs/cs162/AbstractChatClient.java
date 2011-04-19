@@ -228,9 +228,12 @@ public abstract class AbstractChatClient extends Thread{
 		else if (servReply.equals(ServerReply.sendack))
 			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");			
 		else if (servReply.equals(ServerReply.receive)) {
+			System.out.println("received");
 			benchmark(recObject);
-			output(servReply.toString() + " " + recObject.getTimestamp() + " " +
-					recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
+			//output(servReply.toString() + " " + recObject.getTimestamp() + " " +
+					//recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
+			System.out.format(servReply.toString() + " %.3f " + recObject.getSender() + " " + recObject.getDest() + 
+					" " + recObject.getMessage() + "\n", Double.parseDouble(recObject.getTimestamp()));
 		}
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());

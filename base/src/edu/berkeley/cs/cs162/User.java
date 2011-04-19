@@ -129,7 +129,7 @@ public class User extends BaseUser {
 	public void send(String dest, String msg, int sqn) {
 		sendLock.writeLock().lock();
 		if(loggedOff || toSend.size() >= MAX_SEND) {
-			String timestamp = Long.toString(System.currentTimeMillis()/1000);
+			String timestamp = Double.toString(System.currentTimeMillis()/1000);
 			String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
 			sqn++;
 			TestChatServer.logUserSendMsg(username, formattedMsg);

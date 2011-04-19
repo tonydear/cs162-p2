@@ -9,7 +9,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -392,10 +391,6 @@ public abstract class AbstractChatClient extends Thread{
 				e.printStackTrace();
 			}
 		}
-	}
-	
-	public static void main(String[] args) throws UnknownHostException{
-		new ChatClient();
 	}
 	
 	protected abstract void benchmark(TransportObject recObject);

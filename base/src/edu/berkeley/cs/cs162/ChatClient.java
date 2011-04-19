@@ -19,7 +19,7 @@ public class ChatClient extends Thread{
 	private Map<String,ChatLog> logs;
 	private BufferedReader commands;
 	private ObjectInputStream received;
-	private ObjectOutputStream sent;
+	protected ObjectOutputStream sent;
 	private Thread receiver;
 	private volatile boolean connected;
 	private Command reply; 				//what reply from server should look like
@@ -162,7 +162,7 @@ public class ChatClient extends Thread{
 		return;
 	}
 	
-	private void send(String dest, int sqn, String msg){
+	protected void send(String dest, int sqn, String msg){
 		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);

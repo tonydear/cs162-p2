@@ -141,7 +141,7 @@ public class User extends BaseUser {
 			sendLock.writeLock().unlock();
 			return;
 		}
-		String timestamp = Long.toString(System.currentTimeMillis()/1000);
+		String timestamp = Double.toString(System.currentTimeMillis()/1000.0);
 		MessageJob msgJob = new MessageJob(dest,msg,sqn,timestamp);
 		String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
 

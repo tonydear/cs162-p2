@@ -168,15 +168,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		ResultSet rs;
 		try {
 			rs = DBHandler.getUserMemberships(u.getUsername());
-			System.out.println("initiating " + u.getUsername() + " " + rs);
 			while(rs.next()){
 				ChatGroup group = groups.get(rs.getString("gname"));
-				System.out.println(group);
 				group.addLoggedInUser(u.getUsername(), u);
 				u.addToGroups(group.getName());
-				System.out.println(group.getName());
 			}
-			System.out.println("done initiating " + u.getUsername());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -201,12 +197,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			System.err.println("no PRNG algorithm");
 		}
 		String hash = hashPassword(password, salt);
-
-		System.out.println("creating salt: " + salt + "hash: " + hash);
 		
 		try {
 			DBHandler.addUser(username, salt, hash);
-			System.out.println("salt check: " + DBHandler.getSalt(username));
 		} catch(Exception e) {
 			lock.writeLock().unlock();
 			e.printStackTrace();
@@ -249,7 +242,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			salt = DBHandler.getSalt(username);
 			
 			String hash = hashPassword(password, salt);
-			System.out.println(salt + ":salt hash:" + hash);
 			if (hash == null || !hash.equals(DBHandler.getHashedPassword(username))) {
 				TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 				return LoginError.USER_REJECTED;			
@@ -285,9 +277,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			md.update(salt);
 		    hashed = DBHandler.byteToBase64(md.digest(password.getBytes("UTF-8")));
 		} catch (Exception e) {
-			System.err.println("oops");
+			e.printStackTrace();
 		}
-		System.out.println("HASHED!! " + hashed);
 	    return hashed;
 	}
 
@@ -527,7 +518,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		
 		public void run() {
 			try {
-				System.out.println("first thread started");
 				List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
@@ -538,9 +528,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			} catch (Exception e){
 				e.printStackTrace();
 			}
-			System.out.println("first thread completed");
 		}
-		
 	}
 	
 	class Handler implements Callable<ChatServer.Handler>, Runnable {
@@ -563,7 +551,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		    }
 			@Override
 			public Handler call() throws Exception {
-				System.out.println("handler called");
 		    	TransportObject recObject = null;
 		    	while(recObject == null) {
 					try {
@@ -584,7 +571,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 							String username = recObject.getUsername();
 							String password = recObject.getPassword();
 							LoginError loginError = login(username,password);
-							System.out.println("called login: " + loginError);
 							TransportObject sendObject;
 							if (loginError == LoginError.USER_ACCEPTED) {
 								sendObject = new TransportObject(Command.login, ServerReply.OK);

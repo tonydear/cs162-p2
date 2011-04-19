@@ -40,22 +40,18 @@ public class BenchmarkSender extends AbstractChatClient {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		System.out.println("Sending rtt");
 		sendLock.unlock();
 	}
 	
 	@Override
 	protected void benchmark(TransportObject object){
-		System.out.println(object.getSQN());
 		if(!benchmarkTimes.containsKey(object.getSQN()))
 			return;
 				
 		long sentTime = benchmarkTimes.get(object.getSQN());
 		benchmarkTimes.remove(object.getSQN());
 		long receivedTime = System.currentTimeMillis();
-		System.out.println(receivedTime);
 		double rrt = (receivedTime - sentTime);
-		System.out.println(rrt);
 		sendRTT(rrt);
 	}
 	

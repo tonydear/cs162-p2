@@ -1,7 +1,6 @@
 package edu.berkeley.cs.cs162;
 
-import java.io.EOFException;
-import java.net.SocketException;
+import java.net.UnknownHostException;
 
 public class BenchmarkReceiver extends AbstractChatClient {
 	@Override
@@ -21,5 +20,9 @@ public class BenchmarkReceiver extends AbstractChatClient {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void main(String[] args) throws UnknownHostException{
+		new BenchmarkReceiver();
 	}
 }

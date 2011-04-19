@@ -60,7 +60,7 @@ public class DBHandler {
     			"VALUES (?,?,?,?,?,?)");
     	pstmt.setString(1, msg.getSource());
     	pstmt.setInt(2, msg.getSQN());
-    	long time = Long.parseLong(msg.getTimestamp());
+    	long time = (long) Double.parseDouble(msg.getTimestamp());
     	pstmt.setTime(3,new Time(time));
     	pstmt.setString(4, msg.getDest());
     	pstmt.setString(5, msg.getContent());

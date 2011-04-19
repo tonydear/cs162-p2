@@ -15,6 +15,8 @@ public class BenchmarkReceiver extends AbstractChatClient {
 			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
 		try {
+			isWaiting = true;
+			reply = Command.send;
 			sent.writeObject(toSend);
 		} catch (Exception e) {
 			e.printStackTrace();

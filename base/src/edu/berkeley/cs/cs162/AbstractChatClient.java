@@ -13,19 +13,20 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BenchmarkReceiver extends Thread{
+
+public abstract class AbstractChatClient extends Thread{
 	private Socket mySocket;
 	private Map<String,ChatLog> logs;
 	private BufferedReader commands;
 	private ObjectInputStream received;
-	private ObjectOutputStream sent;
+	protected ObjectOutputStream sent;
 	private Thread receiver;
 	private volatile boolean connected;
 	private Command reply; 				//what reply from server should look like
 	private volatile boolean isWaiting; //waiting for reply from server?
 	private volatile boolean isLoggedIn, isQueued;
 	
-	public BenchmarkReceiver(){
+	public AbstractChatClient(){
 		mySocket = null;
 		logs = new HashMap<String,ChatLog>();
 		commands = new BufferedReader(new InputStreamReader(System.in));
@@ -161,7 +162,7 @@ public class BenchmarkReceiver extends Thread{
 		return;
 	}
 	
-	private void send(String dest, int sqn, String msg){
+	protected void send(String dest, int sqn, String msg){
 		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
@@ -402,11 +403,8 @@ public class BenchmarkReceiver extends Thread{
 	}
 	
 	public static void main(String[] args) throws UnknownHostException{
-		new BenchmarkReceiver();
-		
+		new ChatClient();
 	}
 	
-	protected void benchmark(TransportObject recObject) {
-		send(recObject.getSender(),recObject.getSQN(),recObject.getMessage() + "ghost");
-	}
+	protected abstract void benchmark(TransportObject recObject);
 }

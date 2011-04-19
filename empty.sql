@@ -1,6 +1,7 @@
 DROP TABLE Users;
 DROP TABLE Memberships;
 DROP TABLE Messages;
+DROP TABLE Rtt;
 
 CREATE TABLE Users (
 	username VARCHAR(64) NOT NULL,
@@ -29,4 +30,8 @@ CREATE TABLE Messages (
 		ON DELETE CASCADE,
 	FOREIGN KEY (sender) REFERENCES Users (username)
 		ON DELETE NO ACTION
+);
+
+CREATE TABLE Rtt (
+	rtt DOUBLE NOT NULL PRIMARY KEY
 );

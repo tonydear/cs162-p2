@@ -25,7 +25,6 @@ public class DBHandler {
                 getConnection("jdbc:" + "mysql" + "://" + "ec2-50-17-180-71.compute-1.amazonaws.com" +
                               ":" + 3306 + "/" + "group24", connectionProps);
         } catch (SQLException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -171,5 +170,11 @@ public class DBHandler {
     	pstmt.setString(1, u);
     	rs = pstmt.executeQuery();
     	return rs;
+    }
+    
+    public static void addRTT(double rtt) throws SQLException {
+    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO Rtt VALUES (?)");
+    	pstmt.setDouble(1, rtt);
+    	pstmt.executeUpdate();
     }
 }

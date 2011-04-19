@@ -10,5 +10,6 @@ public enum Command {
 	leave,
 	send,
 	adduser,
-	readlog
+	readlog,
+	rtt
 }

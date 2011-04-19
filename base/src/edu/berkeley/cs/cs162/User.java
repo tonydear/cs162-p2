@@ -12,8 +12,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -306,26 +304,28 @@ public class User extends BaseUser {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
-		else if(recv.getCommand() == Command.readlog){
+		} else if(recv.getCommand() == Command.readlog){
 			try {
 				server.readlog(username);
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
-		else if (recv.getCommand() == Command.join)
+		} else if (recv.getCommand() == Command.join)
 			server.joinGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.leave)
 			server.leaveGroup(this, recv.getGname());
-		else if (recv.getCommand() == Command.send) {
+		else if (recv.getCommand() == Command.send)
 			send(recv.getDest(), recv.getMessage(), recv.getSQN());
-		}
 		else if (recv.getCommand() == Command.adduser){
 			ServerReply success = server.addUser(recv.getUsername(), recv.getPassword());
 			TransportObject sendObject = new TransportObject(Command.adduser,success);
 			queueReply(sendObject);
+		} else if (recv.getCommand() == Command.rtt) {
+			try {
+				DBHandler.addRTT(recv.getRTT());
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }

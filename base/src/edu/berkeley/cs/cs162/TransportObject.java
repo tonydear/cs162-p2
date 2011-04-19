@@ -12,6 +12,7 @@ public class TransportObject implements Serializable {
 	private int sqn;
 	private String msg;
 	private String timestamp;
+	private double rtt_time;
 	private ServerReply reply;
 	
 	//Default
@@ -22,6 +23,7 @@ public class TransportObject implements Serializable {
 		sender = null;
 		dest = null;
 		sqn = 0;
+		rtt_time = 0;
 		msg = null;
 		timestamp = null;
 		reply = ServerReply.NONE;
@@ -32,6 +34,12 @@ public class TransportObject implements Serializable {
 	public TransportObject(Command cmd) {
 		this();
 		command = cmd;
+	}
+	
+	public TransportObject(Command cmd, double rtt) {
+		this();
+		command = cmd;
+		rtt_time = rtt;
 	}
 	
 	//Client join, leave
@@ -117,6 +125,7 @@ public class TransportObject implements Serializable {
 	public String getSender() { return sender; }
 	public String getDest() { return dest; }
 	public int getSQN() { return sqn; }
+	public double getRTT() { return rtt_time; }
 	public String getMessage() { return msg; }
 	public ServerReply getServerReply() { return reply; }
 	public String getTimestamp() { return timestamp; }

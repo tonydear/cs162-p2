@@ -1,7 +1,6 @@
 package edu.berkeley.cs.cs162;
 
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -67,7 +66,6 @@ public class ChatGroup {
 			loggedInUsers.put(user, (User)userObj);			//add user to hashmap
 			userList.add(user);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return false;
 		}

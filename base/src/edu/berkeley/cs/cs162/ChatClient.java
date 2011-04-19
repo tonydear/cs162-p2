@@ -280,13 +280,7 @@ public class ChatClient extends Thread{
 	}
 	
 	public synchronized void processCommands() throws Exception {
-		String command = null;
-		try {
-			command = commands.readLine();
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		}
+		String command = retrieveCommand();
 		if(command == null)
 			return;
 		String[] tokens = command.split(" ");
@@ -383,6 +377,16 @@ public class ChatClient extends Thread{
 		else {
 			throw new Exception("invalid command");
 		}
+	}
+
+	protected String retrieveCommand() {
+		String command = null;
+		try {
+			command = commands.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return command;
 	}
 	
 	@Override

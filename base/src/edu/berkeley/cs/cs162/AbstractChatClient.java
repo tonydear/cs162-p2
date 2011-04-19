@@ -21,10 +21,11 @@ public abstract class AbstractChatClient extends Thread{
 	private ObjectInputStream received;
 	protected ObjectOutputStream sent;
 	private Thread receiver;
-	private volatile boolean connected;
-	private Command reply; 				//what reply from server should look like
-	private volatile boolean isWaiting; //waiting for reply from server?
-	private volatile boolean isLoggedIn, isQueued;
+	protected volatile boolean connected;
+	protected Command reply; 				//what reply from server should look like
+	protected volatile boolean isWaiting; //waiting for reply from server?
+	protected volatile boolean isLoggedIn;
+	private volatile boolean isQueued;
 	
 	public AbstractChatClient(){
 		mySocket = null;
@@ -162,19 +163,7 @@ public abstract class AbstractChatClient extends Thread{
 		return;
 	}
 	
-	protected void send(String dest, int sqn, String msg){
-		if(!connected || !isLoggedIn)
-			return;
-		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
-		try {
-			isWaiting = true;
-			reply = Command.send;
-			sent.writeObject(toSend);
-			this.wait();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+	protected abstract void send(String dest, int sqn, String msg);
 	
 	private void receive(){
 		TransportObject recObject = null;

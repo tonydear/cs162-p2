@@ -14,8 +14,18 @@ public class BenchmarkSender extends AbstractChatClient {
 	@Override
 	protected void send(String dest, int sqn, String msg){
 		sendLock.lock();
-		super.send(dest,sqn,msg);
+		if(!connected || !isLoggedIn)
+			return;
+		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
+		try {
+			isWaiting = true;
+			reply = Command.send;
+			sent.writeObject(toSend);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		benchmarkTimes.put(sqn,System.currentTimeMillis());
+		System.out.println(benchmarkTimes.get(sqn));
 		sendLock.unlock();
 	}
 	
@@ -37,7 +47,9 @@ public class BenchmarkSender extends AbstractChatClient {
 		long sentTime = benchmarkTimes.get(object.getSQN());
 		benchmarkTimes.remove(object.getSQN());
 		long receivedTime = System.currentTimeMillis();
-		double rrt = (receivedTime - sentTime)/1000;
+		System.out.println(receivedTime);
+		double rrt = (receivedTime - sentTime);
+		System.out.println(rrt);
 		sendRTT(rrt);
 	}
 	

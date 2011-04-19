@@ -33,6 +33,7 @@ public class BenchmarkSender extends ChatClient {
 	@Override
 	protected void benchmark(TransportObject object){
 		long sentTime = benchmarkTimes.get(object.getSQN());
+		benchmarkTimes.remove(object.getSQN());
 		long receivedTime = System.currentTimeMillis();
 		double rrt = (receivedTime - sentTime)/1000;
 		sendRTT(rrt);

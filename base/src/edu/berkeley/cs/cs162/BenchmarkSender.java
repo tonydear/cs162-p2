@@ -13,7 +13,6 @@ public class BenchmarkSender extends AbstractChatClient {
 	
 	@Override
 	protected void send(String dest, int sqn, String msg){
-		sendLock.lock();
 		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
@@ -21,26 +20,25 @@ public class BenchmarkSender extends AbstractChatClient {
 			isWaiting = true;
 			reply = Command.send;
 			benchmarkTimes.put(sqn,System.currentTimeMillis());
+			sendLock.lock();
 			sent.writeObject(toSend);
+			sendLock.unlock();
 			this.wait();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
-		
-		sendLock.unlock();
 	}
 	
 	private void sendRTT(double rtt){
-		sendLock.lock();
 		TransportObject rttObject = new TransportObject(Command.rtt,rtt);
 		try {
+			sendLock.lock();
 			sent.writeObject(rttObject);
+			sendLock.unlock();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		sendLock.unlock();
 	}
 	
 	@Override

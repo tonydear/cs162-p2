@@ -223,13 +223,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	
 	public LoginError login(String username, String password) {
 		lock.writeLock().lock();
-		System.out.println("loggedin got called");
 		if (isDown || onlineNames.contains(username) || !registeredUsers.contains(username)) {
 			TestChatServer.logUserLoginFailed(username, new Date(), LoginError.USER_REJECTED);
 			lock.writeLock().unlock();
 			return LoginError.USER_REJECTED;
 		}
-		System.out.println("logged in passed rejected");
 		LoginError error = loginAttempt(username, password);
 		lock.writeLock().unlock();
 		return error;

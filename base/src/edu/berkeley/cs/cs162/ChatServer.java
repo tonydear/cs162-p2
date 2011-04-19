@@ -54,7 +54,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
 	private ExecutorService pool;
-	private MessageDigest md;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -64,12 +63,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		lock = new ReentrantReadWriteLock(true);
 		waiting_users = new ArrayBlockingQueue<User>(MAX_WAITING_USERS);
 		isDown = false;
-		try {
-			md = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
 	}
 	
 	public ChatServer(int port) throws IOException {
@@ -171,15 +165,19 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	}
 	
 	private void initUserGroups(User u){
-		ResultSet rs = DBHandler.getUserMemberships(u.getUsername());
+		ResultSet rs;
 		try {
+			rs = DBHandler.getUserMemberships(u.getUsername());
+			System.out.println("initiating " + u.getUsername() + " " + rs);
 			while(rs.next()){
 				ChatGroup group = groups.get(rs.getString("gname"));
+				System.out.println(group);
 				group.addLoggedInUser(u.getUsername(), u);
 				u.addToGroups(group.getName());
+				System.out.println(group.getName());
 			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
+			System.out.println("done initiating " + u.getUsername());
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -197,7 +195,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		byte[] salt = null;
 		try {
 			random = SecureRandom.getInstance("SHA1PRNG");
-			salt = new byte[100];
+			salt = new byte[2];
 			random.nextBytes(salt);
 		} catch (NoSuchAlgorithmException e1) {
 			System.err.println("no PRNG algorithm");
@@ -208,6 +206,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		
 		try {
 			DBHandler.addUser(username, salt, hash);
+			System.out.println("salt check: " + DBHandler.getSalt(username));
 		} catch(Exception e) {
 			lock.writeLock().unlock();
 			e.printStackTrace();
@@ -288,6 +287,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			System.err.println("oops");
 		}
+		System.out.println("HASHED!! " + hashed);
 	    return hashed;
 	}
 
@@ -311,8 +311,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			lock.writeLock().unlock();
 			return false;
 		}
-		ResultSet rs = DBHandler.getUserMemberships(username);
 		try {
+			ResultSet rs = DBHandler.getUserMemberships(username);
 			while(rs.next()) {
 				String g = rs.getString("gname");
 				ChatGroup c = groups.get(g);
@@ -405,7 +405,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			success = group.joinGroup(user.getUsername(), user);
 			user.addToGroups(groupname);
 			TestChatServer.logUserJoinGroup(groupname, user.getUsername(), new Date());
-			if(success)
+			if (success)
 				joinAck(user,groupname,ServerReply.OK_CREATE);
 			lock.writeLock().unlock();
 			return success;
@@ -424,23 +424,12 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		}
 		if (group.leaveGroup(user.getUsername())) {
 			leaveAck(user,groupname,ServerReply.OK);
-			if(group.getNumUsers() <= 0) { 
+			if(group.getAllUsers().size() <= 0) { 
 				groups.remove(group.getName()); 
 				onlineNames.remove(group.getName());
-				try {
-					DBHandler.removeGroup(groupname);
-				} catch (SQLException e) {
-					System.err.println("unsuccessful group removal from database");
-				}
 			}
 			user.removeFromGroups(groupname);
 			TestChatServer.logUserLeaveGroup(groupname, user.getUsername(), new Date());
-			String username = user.getUsername();
-			try {
-				DBHandler.removeFromGroup(username, groupname);
-			} catch (SQLException e) {
-				System.err.println("unsuccessful membership deletion in database");
-			}
 			lock.writeLock().unlock();
 			return true;
 		}
@@ -538,6 +527,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		
 		public void run() {
 			try {
+				System.out.println("first thread started");
 				List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
@@ -548,7 +538,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			} catch (Exception e){
 				e.printStackTrace();
 			}
-				
+			System.out.println("first thread completed");
 		}
 		
 	}
@@ -573,6 +563,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		    }
 			@Override
 			public Handler call() throws Exception {
+				System.out.println("handler called");
 		    	TransportObject recObject = null;
 		    	while(recObject == null) {
 					try {
@@ -631,6 +622,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 								e.printStackTrace();
 							}
 							recObject = null;
+						} else {
+							recObject = null;
 						}
 					}
 		    	}
@@ -646,7 +639,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		int port = Integer.parseInt(args[0]);
 		ChatServer chatServer = new ChatServer(port);
 		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
-		/*while(!chatServer.isDown()){
+		while(!chatServer.isDown()){
 			String line = commands.readLine();
 			String[] tokens = line.split(" ");
 			if(tokens[0].equals("users")){
@@ -657,17 +650,29 @@ public class ChatServer extends Thread implements ChatServerInterface {
 					if(group==null)
 						System.out.println("no such group: " + tokens[1]);
 					else{
-						Map<String,User> userList = group.getUserList();
-						System.out.println(userList.keySet());
+						Set<String> userList = group.getAllUsers();
+						System.out.println(userList);
 					}
 				}
 			} else if(tokens[0].equals("groups")){
 				System.out.println(chatServer.getGroups());
 			} else if (tokens[0].equals("active-users")){
-				System.out.println(chatServer.getActiveUsers());
+				if(tokens.length==1) // get logged in users
+					System.out.println(chatServer.getActiveUsers());
+				else { // get logged in users from a specific group
+					ChatGroup group = chatServer.getGroup(tokens[1]);
+					if(group==null)
+						System.out.println("no such group: " + tokens[1]);
+					else{
+						Map<String,User> userList = group.getUserList();
+						System.out.println(userList.keySet());
+					}
+				}
 			} else if (tokens[0].equals("shutdown")){
 				chatServer.shutdown();
+			} else if (tokens[0].equals("thread-count")){
+				System.out.println(Thread.activeCount());
 			}
-		}*/
+		}
 	}
 }

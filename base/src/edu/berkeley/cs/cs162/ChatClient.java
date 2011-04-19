@@ -91,7 +91,7 @@ public class ChatClient extends Thread{
 	}
 	
 	private void adduser(String username, String password){
-		if(!connected || isLoggedIn || isQueued)
+		if(!connected)
 			return;
 		TransportObject toSend = new TransportObject(Command.adduser,username,password);
 		try{
@@ -270,7 +270,9 @@ public class ChatClient extends Thread{
 			connected = false;
 			isLoggedIn = false;
 			isQueued = false; //should be already
+			e.printStackTrace();
 		}
+		System.out.println("sent readlog request, connect: " + connected);
 	}
 	
 	public Map<String,ChatLog> getLogs(){

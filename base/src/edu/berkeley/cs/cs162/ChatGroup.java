@@ -88,26 +88,27 @@ public class ChatGroup {
 		return true;
 	}
 	
-	public synchronized MsgSendError forwardMessage(Message msg) {
+	public synchronized MsgSendError forwardMessage(Message msg) { // returns SENT even if just stored on db
 		if (! loggedInUsers.containsKey(msg.getSource()))
 			return MsgSendError.NOT_IN_GROUP;
-		Collection<User> users = loggedInUsers.values();
-		Iterator<User> it = users.iterator();
-		User user;
+		Iterator<String> it = userList.iterator();
 		boolean success = true;
 		while(it.hasNext()) {
-			user = it.next();
-			if (!user.acceptMsg(msg)) {
-				if (!userList.contains(user)) {
+			String username = it.next();
+			User user = loggedInUsers.get(username);
+			if (user==null) {
+				if (!userList.contains(username)) {
 					success = false;
 				}
 				else {
 					try {
-						DBHandler.writeLog(msg, user.getUsername());
+						DBHandler.writeLog(msg, username);
 					} catch (SQLException e) {
 						e.printStackTrace();
 					}
 				}
+			} else{
+				success = user.acceptMsg(msg);
 			}
 		}
 		if (success)

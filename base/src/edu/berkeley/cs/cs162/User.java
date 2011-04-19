@@ -30,7 +30,7 @@ public class User extends BaseUser {
 	private String username;
 	private List<String> groupsJoined;
 	private Map<String, ChatLog> chatlogs;
-	private Queue<MessageJob> toSend;
+	private BlockingQueue<MessageJob> toSend;
 	private ReentrantReadWriteLock sendLock;
 	private volatile boolean loggedOff;
 	private final static int MAX_SEND = 10000;
@@ -42,7 +42,7 @@ public class User extends BaseUser {
 		this.username = username;
 		groupsJoined = new LinkedList<String>();
 		chatlogs = new HashMap<String, ChatLog>();
-		toSend = new LinkedList<MessageJob>();
+		toSend = new ArrayBlockingQueue<MessageJob>(MAX_SEND);
 		sendLock = new ReentrantReadWriteLock(true);
 		pendingLogoff = false;
 		queuedServerReplies = new ArrayBlockingQueue<TransportObject>(MAX_SEND);
@@ -255,13 +255,21 @@ public class User extends BaseUser {
 
 	public void run() {
 		while(!loggedOff){
-			sendLock.writeLock().lock();
-			if (!toSend.isEmpty()) {
-				MessageJob msgJob = toSend.poll();
+			//sendLock.writeLock().lock();
+			//if (!toSend.isEmpty()) {
+			MessageJob msgJob = null;
+			try {
+				msgJob = toSend.poll(3, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if(msgJob!=null){
 				MsgSendError msgStatus = server.processMessage(username, msgJob.dest, msgJob.msg, msgJob.sqn, msgJob.timestamp);
 				sendClientAck(msgStatus,msgJob);
 			}
-			sendLock.writeLock().unlock();
+			//}
+			//sendLock.writeLock().unlock();
 		}
 		sendLock.writeLock().lock();
 		while (!toSend.isEmpty()) {
@@ -313,6 +321,11 @@ public class User extends BaseUser {
 			server.leaveGroup(this, recv.getGname());
 		else if (recv.getCommand() == Command.send) {
 			send(recv.getDest(), recv.getMessage(), recv.getSQN());
+		}
+		else if (recv.getCommand() == Command.adduser){
+			ServerReply success = server.addUser(recv.getUsername(), recv.getPassword());
+			TransportObject sendObject = new TransportObject(Command.adduser,success);
+			queueReply(sendObject);
 		}
 	}
 }

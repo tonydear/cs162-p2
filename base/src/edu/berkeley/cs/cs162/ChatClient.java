@@ -238,9 +238,11 @@ public class ChatClient extends Thread{
 		
 		else if (servReply.equals(ServerReply.sendack))
 			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");			
-		else if (servReply.equals(ServerReply.receive))
+		else if (servReply.equals(ServerReply.receive)) {
+			benchmark(recObject);
 			output(servReply.toString() + " " + recObject.getTimestamp() + " " +
 					recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
+		}
 		else if (servReply.equals(ServerReply.timeout)) {
 			output(servReply.toString());
 			connected = false;
@@ -402,6 +404,10 @@ public class ChatClient extends Thread{
 	
 	public static void main(String[] args) throws UnknownHostException{
 		new ChatClient();
+		
+	}
+	
+	protected void benchmark(TransportObject recObject) {
 		
 	}
 }

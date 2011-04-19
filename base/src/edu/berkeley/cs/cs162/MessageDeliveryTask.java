@@ -1,7 +1,5 @@
 package edu.berkeley.cs.cs162;
 
-import java.util.Calendar;
-
 public class MessageDeliveryTask implements Runnable {
 	String source, destination, message;
 	ChatServerInterface server;

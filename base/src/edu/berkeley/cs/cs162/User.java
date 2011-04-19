@@ -155,7 +155,7 @@ public class User extends BaseUser {
 		logRecvMsg(msg);
 		TestChatServer.logUserMsgRecvd(username, msg.toString(), new Date());
 		TransportObject toSend = new TransportObject(ServerReply.receive,msg.getSource(),
-				msg.getDest(),msg.getContent(),msg.getTimestamp());
+				msg.getDest(),msg.getContent(),msg.getTimestamp(),msg.getSQN());
 		if(!queueReply(toSend))
 			return false;
 		msgReceived(msg.getSource()+"\t"+msg.getDest()+"\t"+msg.getSQN()+"\t"+msg.getContent());

@@ -391,9 +391,5 @@ public abstract class AbstractChatClient extends Thread{
 		}
 	}
 	
-	public static void main(String[] args) throws UnknownHostException{
-		new ChatClient();
-	}
-	
 	protected abstract void benchmark(TransportObject recObject);
 }

@@ -166,6 +166,7 @@ public class DBHandler {
     public static ResultSet getUserMemberships(String u) throws SQLException {
     	PreparedStatement pstmt = null;
     	ResultSet rs = null;
+
     	pstmt = conn.prepareStatement("SELECT gname FROM Memberships WHERE username = ?");
     	pstmt.setString(1, u);
     	rs = pstmt.executeQuery();

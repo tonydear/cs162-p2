@@ -26,6 +26,7 @@ public class BenchmarkSender extends AbstractChatClient {
 			this.wait();
 		} catch (Exception e) {
 			e.printStackTrace();
+			sendLock.unlock();
 		}
 	}
 	
@@ -38,6 +39,7 @@ public class BenchmarkSender extends AbstractChatClient {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			sendLock.unlock();
 		}
 	}
 	

@@ -18,12 +18,12 @@ public class DBHandler {
     static {   	
         conn = null;
         Properties connectionProps = new Properties();
-        connectionProps.put("user", "group24");
+        connectionProps.put("user", "group14");
         connectionProps.put("password", "fuck you");
         try {
             conn = DriverManager.
                 getConnection("jdbc:" + "mysql" + "://" + "ec2-50-17-180-71.compute-1.amazonaws.com" +
-                              ":" + 3306 + "/" + "group24", connectionProps);
+                              ":" + 3306 + "/" + "group14", connectionProps);
         } catch (SQLException e) {
             e.printStackTrace();
         }

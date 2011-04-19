@@ -162,7 +162,7 @@ public class ChatClient extends Thread{
 		return;
 	}
 	
-	private void send(String dest, int sqn, String msg){
+	protected void send(String dest, int sqn, String msg){
 		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);

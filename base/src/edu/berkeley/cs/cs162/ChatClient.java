@@ -162,7 +162,7 @@ public class ChatClient extends Thread{
 		return;
 	}
 	
-	protected void send(String dest, int sqn, String msg){
+	private void send(String dest, int sqn, String msg){
 		if(!connected || !isLoggedIn)
 			return;
 		TransportObject toSend = new TransportObject(Command.send,dest,sqn,msg);
@@ -239,7 +239,6 @@ public class ChatClient extends Thread{
 		else if (servReply.equals(ServerReply.sendack))
 			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");			
 		else if (servReply.equals(ServerReply.receive)) {
-			benchmark(recObject);
 			output(servReply.toString() + " " + recObject.getTimestamp() + " " +
 					recObject.getSender() + " " + recObject.getDest() + " " + recObject.getMessage());
 		}
@@ -407,7 +406,4 @@ public class ChatClient extends Thread{
 		
 	}
 	
-	protected void benchmark(TransportObject recObject) {
-		
-	}
 }

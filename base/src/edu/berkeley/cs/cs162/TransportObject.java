@@ -37,6 +37,7 @@ public class TransportObject implements Serializable {
 	}
 	
 	//Send rtt to server for benchmarking
+	//Rtt send
 	public TransportObject(Command cmd, double rtt) {
 		this();
 		command = cmd;
@@ -99,6 +100,17 @@ public class TransportObject implements Serializable {
 		this.dest = dest;
 		this.msg = msg;
 		this.timestamp = timestamp;
+	}
+	
+	//benchmark receive 
+	public TransportObject(ServerReply reply, String sender, String dest, String msg, String timestamp, int sqn) {
+		this();
+		this.reply = reply;
+		this.sender = sender;
+		this.dest = dest;
+		this.msg = msg;
+		this.timestamp = timestamp;
+		this.sqn = sqn;
 	}
 	
 	//Timeout

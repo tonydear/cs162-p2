@@ -224,8 +224,14 @@ public abstract class AbstractChatClient extends Thread{
 			synchronized(this) { this.notify(); }
 		} 
 		
-		else if (servReply.equals(ServerReply.sendack))
-			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");			
+		else if (servReply.equals(ServerReply.sendack)) {
+			output(servReply.toString() + " " + recObject.getSQN() + " FAILED");
+			if(isWaiting) {
+				isWaiting = false;
+				reply = null;
+				synchronized(this) { this.notify(); }
+			}
+		}
 		else if (servReply.equals(ServerReply.receive)) {
 			benchmark(recObject);
 			//output(servReply.toString() + " " + recObject.getTimestamp() + " " +

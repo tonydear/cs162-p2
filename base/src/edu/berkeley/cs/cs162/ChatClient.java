@@ -1,6 +1,12 @@
 package edu.berkeley.cs.cs162;
 
+import java.net.UnknownHostException;
+
 public class ChatClient extends AbstractChatClient {
+
+	public static void main(String[] args) throws UnknownHostException{
+		new ChatClient();
+	}
 	
 	@Override
 	protected void benchmark(TransportObject recObject) {

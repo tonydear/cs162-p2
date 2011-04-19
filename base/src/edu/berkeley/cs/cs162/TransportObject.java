@@ -36,6 +36,7 @@ public class TransportObject implements Serializable {
 		command = cmd;
 	}
 	
+	//Send rtt to server for benchmarking
 	//Rtt send
 	public TransportObject(Command cmd, double rtt) {
 		this();

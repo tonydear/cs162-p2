@@ -321,6 +321,7 @@ public class User extends BaseUser {
 			TransportObject sendObject = new TransportObject(Command.adduser,success);
 			queueReply(sendObject);
 		} else if (recv.getCommand() == Command.rtt) {
+			System.out.println("rtt received");
 			try {
 				DBHandler.addRTT(recv.getRTT());
 			} catch (SQLException e) {

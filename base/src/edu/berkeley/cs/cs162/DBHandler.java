@@ -19,7 +19,7 @@ public class DBHandler {
         conn = null;
         Properties connectionProps = new Properties();
         connectionProps.put("user", "group24");
-        connectionProps.put("password", "dkhjjjprtd");
+        connectionProps.put("password", "fuck you");
         try {
             conn = DriverManager.
                 getConnection("jdbc:" + "mysql" + "://" + "ec2-50-17-180-71.compute-1.amazonaws.com" +

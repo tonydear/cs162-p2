@@ -663,7 +663,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 				chatServer.shutdown();
 			} else if (tokens[0].equals("thread-count")) {
 				System.err.println(Thread.activeCount());
-				Thread.currentThread().getThreadGroup().list();
 			}
 		}
 	}

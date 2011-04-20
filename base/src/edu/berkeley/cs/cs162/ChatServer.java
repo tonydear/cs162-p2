@@ -53,7 +53,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	private final static int MAX_WAITING_USERS = 10;
 	private final static long TIMEOUT = 20;
 	private ServerSocket mySocket;
-	private ExecutorService pool;
 	
 	public ChatServer() {
 		users = new HashMap<String, User>();
@@ -67,7 +66,6 @@ public class ChatServer extends Thread implements ChatServerInterface {
 	
 	public ChatServer(int port) throws IOException {
 		this();
-		pool = Executors.newFixedThreadPool(1000);
 		try {
 			mySocket = new ServerSocket(port);
 		} catch (Exception e) {
@@ -345,6 +343,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		try {
 			task.add(new Handler(params));
 			ObjectOutputStream sent = params.getOutputStream();
+			ExecutorService pool = Executors.newFixedThreadPool(10);
 			List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 			if (futures.get(0).isCancelled()) {
 				TransportObject sendObject = new TransportObject(ServerReply.timeout);
@@ -514,7 +513,9 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		}
 		
 		public void run() {
+			ExecutorService pool = null;
 			try {
+				pool = Executors.newFixedThreadPool(10);
 				List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 				if (futures.get(0).isCancelled()) {
 					ObjectOutputStream sent = handler.sent;
@@ -525,6 +526,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			} catch (Exception e){
 				e.printStackTrace();
 			}
+			pool.shutdownNow();
 		}
 	}
 	

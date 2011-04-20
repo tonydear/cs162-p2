@@ -173,9 +173,11 @@ public class DBHandler {
     }
     
     public static void addRTT(double rtt, String username) throws SQLException {
-    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO Rtt (rtt, username) VALUES (?,?)");
+    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO Rtt (rtt, username, timestamp) VALUES (?,?,?)");
+    	long time = System.currentTimeMillis();
     	pstmt.setDouble(1, rtt);
     	pstmt.setString(2, username);
+    	pstmt.setTime(3, new Time(time));
     	pstmt.executeUpdate();
     }
 }

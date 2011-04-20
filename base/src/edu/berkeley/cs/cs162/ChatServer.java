@@ -340,10 +340,11 @@ public class ChatServer extends Thread implements ChatServerInterface {
 
 	public void startNewTimer(SocketParams params) throws IOException {
 		List<Handler> task = new ArrayList<Handler>();
+		ExecutorService pool = null;
 		try {
 			task.add(new Handler(params));
 			ObjectOutputStream sent = params.getOutputStream();
-			ExecutorService pool = Executors.newFixedThreadPool(10);
+			pool = Executors.newFixedThreadPool(10);
 			List<Future<Handler>> futures = pool.invokeAll(task, TIMEOUT, TimeUnit.SECONDS);
 			if (futures.get(0).isCancelled()) {
 				TransportObject sendObject = new TransportObject(ServerReply.timeout);
@@ -352,6 +353,7 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		pool.shutdownNow();
 	}
 	
 	@Override

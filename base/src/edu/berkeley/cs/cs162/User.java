@@ -7,6 +7,8 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -34,6 +36,7 @@ public class User extends BaseUser {
 	private final static int MAX_SEND = 10000;
 	private BlockingQueue<TransportObject> queuedServerReplies;
 	private boolean pendingLogoff;
+	private NumberFormat formatter;
 
 	public User(ChatServer server, String username) {
 		this.server = server;
@@ -44,6 +47,7 @@ public class User extends BaseUser {
 		sendLock = new ReentrantReadWriteLock(true);
 		pendingLogoff = false;
 		queuedServerReplies = new ArrayBlockingQueue<TransportObject>(MAX_SEND);
+		formatter = new DecimalFormat("#.###");
 	}
 
 	public boolean queueReply(TransportObject reply) {
@@ -129,7 +133,7 @@ public class User extends BaseUser {
 	public void send(String dest, String msg, int sqn) {
 		sendLock.writeLock().lock();
 		if(loggedOff || toSend.size() >= MAX_SEND) {
-			String timestamp = Long.toString(System.currentTimeMillis()/1000);
+			String timestamp = formatter.format(System.currentTimeMillis()/1000.0);
 			String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
 			sqn++;
 			TestChatServer.logUserSendMsg(username, formattedMsg);
@@ -139,7 +143,7 @@ public class User extends BaseUser {
 			sendLock.writeLock().unlock();
 			return;
 		}
-		String timestamp = Double.toString(System.currentTimeMillis()/1000.0);
+		String timestamp = formatter.format(System.currentTimeMillis()/1000.0);
 		MessageJob msgJob = new MessageJob(dest,msg,sqn,timestamp);
 		String formattedMsg = username + " " + dest + " " + timestamp+ " " + sqn; 
 
@@ -321,9 +325,8 @@ public class User extends BaseUser {
 			TransportObject sendObject = new TransportObject(Command.adduser,success);
 			queueReply(sendObject);
 		} else if (recv.getCommand() == Command.rtt) {
-			System.out.println("rtt received");
 			try {
-				DBHandler.addRTT(recv.getRTT());
+				DBHandler.addRTT(recv.getRTT(),username);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}

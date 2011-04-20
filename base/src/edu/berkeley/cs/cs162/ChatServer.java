@@ -633,34 +633,34 @@ public class ChatServer extends Thread implements ChatServerInterface {
 			String[] tokens = line.split(" ");
 			if (tokens[0].equals("users")) {
 				if(tokens.length==1) // get users
-					System.out.println(chatServer.getAllUsers());
+					System.err.println(chatServer.getAllUsers());
 				else { // get users from a specific group
 					ChatGroup group = chatServer.getGroup(tokens[1]);
 					if(group == null)
-						System.out.println("no such group: " + tokens[1]);
+						System.err.println("no such group: " + tokens[1]);
 					else{
 						Set<String> userList = group.getAllUsers();
-						System.out.println(userList);
+						System.err.println(userList);
 					}
 				}
 			} else if(tokens[0].equals("groups")) {
-				System.out.println(chatServer.getGroups());
+				System.err.println(chatServer.getGroups());
 			} else if (tokens[0].equals("active-users")) {
 				if(tokens.length == 1) // get logged in users
-					System.out.println(chatServer.getActiveUsers());
+					System.err.println(chatServer.getActiveUsers());
 				else { // get logged in users from a specific group
 					ChatGroup group = chatServer.getGroup(tokens[1]);
 					if(group == null)
-						System.out.println("no such group: " + tokens[1]);
+						System.err.println("no such group: " + tokens[1]);
 					else{
 						Map<String,User> userList = group.getUserList();
-						System.out.println(userList.keySet());
+						System.err.println(userList.keySet());
 					}
 				}
 			} else if (tokens[0].equals("shutdown")) {
 				chatServer.shutdown();
 			} else if (tokens[0].equals("thread-count")) {
-				System.out.println(Thread.activeCount());
+				System.err.println(Thread.activeCount());
 			}
 		}
 	}

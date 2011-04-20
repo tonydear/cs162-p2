@@ -628,6 +628,8 @@ public class ChatServer extends Thread implements ChatServerInterface {
 		BufferedReader commands = new BufferedReader(new InputStreamReader(System.in));
 		while (!chatServer.isDown()) {
 			String line = commands.readLine();
+			if(line == null)
+				break;
 			String[] tokens = line.split(" ");
 			if (tokens[0].equals("users")) {
 				if(tokens.length==1) // get users

@@ -33,7 +33,6 @@ public class DBHandler {
     	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO Users (username, salt, encrypted_password) VALUES (?,?,?)");
     	if(pstmt == null) return;
     	pstmt.setString(1, username);
-    	System.out.println("about to store salt: " + byteToBase64(salt));
     	pstmt.setString(2, byteToBase64(salt));
     	
     	pstmt.setString(3, hashedPassword);
@@ -132,7 +131,6 @@ public class DBHandler {
     	ResultSet rs = pstmt.executeQuery();
     	rs.next();
     	String salt = rs.getString("salt");
-    	System.out.println("just got salt: " + salt);
     	return base64ToByte(salt);
     	
     }

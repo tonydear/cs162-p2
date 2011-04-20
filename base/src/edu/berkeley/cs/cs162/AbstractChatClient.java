@@ -270,7 +270,7 @@ public abstract class AbstractChatClient extends Thread{
 			isQueued = false; //should be already
 			e.printStackTrace();
 		}
-		System.out.println("sent readlog request, connect: " + connected);
+		//System.out.println("sent readlog request, connect: " + connected);
 	}
 	
 	public Map<String,ChatLog> getLogs(){

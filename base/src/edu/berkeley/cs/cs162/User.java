@@ -327,7 +327,7 @@ public class User extends BaseUser {
 		} else if (recv.getCommand() == Command.rtt) {
 			System.out.println("rtt received");
 			try {
-				DBHandler.addRTT(recv.getRTT());
+				DBHandler.addRTT(recv.getRTT(),username);
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}

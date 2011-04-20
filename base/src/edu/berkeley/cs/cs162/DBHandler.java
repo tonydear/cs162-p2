@@ -172,8 +172,8 @@ public class DBHandler {
     	return rs;
     }
     
-    public static void addRTT(double rtt) throws SQLException {
-    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO Rtt (rtt) VALUES (?)");
+    public static void addRTT(double rtt, String username) throws SQLException {
+    	PreparedStatement pstmt = conn.prepareStatement("INSERT INTO Rtt (rtt, username) VALUES (?,?)");
     	pstmt.setDouble(1, rtt);
     	pstmt.executeUpdate();
     }
